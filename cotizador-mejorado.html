@@ -2089,31 +2089,65 @@
         if (!r) return "<div style='padding:32px'>Sin datos. Calcula el pedido primero.</div>";
 
         if (r.tecnica === "dtf") {
-            // Precio unitario consolidado: todo excepto diseño adaptativo (que es un cargo único)
-            const costoBase  = r.totalPedido - r.costoAdaptativo;
-            const precioUnit = r.globalCantidad > 0 ? costoBase / r.globalCantidad : 0;
+            const bajadaXDiseno = r.designs.length > 0 ? r.costoBajadas / r.designs.length : 0;
+            const nombresImp    = r.designs.map(d => d.nombre).join(", ");
+            const costoBase     = r.totalPedido - r.costoAdaptativo;
+            const precioUnitInt = r.globalCantidad > 0 ? costoBase / r.globalCantidad : 0;
 
-            // Descripción: modelo + listado de impresiones
-            const nombresImp = r.designs.map(d => d.nombre).join(", ");
-            const descripcion = r.precioPrenda > 0
-                ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} DTF (${nombresImp})`
-                : `${r.designs.length} DTF (${nombresImp})`;
+            let filas = "";
 
-            let filas = `<tr>
-              <td><strong>${descripcion}</strong></td>
-              <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
-              <td style="text-align:right;vertical-align:middle">$${fmt(precioUnit)}</td>
-              <td style="text-align:right;vertical-align:middle"><strong>$${fmt(costoBase)}</strong></td>
-            </tr>`;
+            // Fila playera
+            if (r.precioPrenda > 0) {
+                filas += `<tr>
+                  <td><strong>${r.nombrePrenda}</strong><div style="font-size:11px;color:#888;margin-top:2px">Playera</div></td>
+                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(r.precioPrenda)}</td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(r.costoPlayeras)}</td>
+                </tr>`;
+            }
 
+            // Filas de impresiones
+            r.designs.forEach(d => {
+                const tam = VT_TAMAÑOS[d.tamanoKey];
+                const ar  = `${d.base}/${d.altura}`;
+                const imgCell = d.imgSrc
+                    ? `<img src="${d.imgSrc}" style="width:48px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
+                    : `<div style="width:48px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:16px"></div>`;
+                const costoD = d.matCosto + bajadaXDiseno;
+                const unitD  = costoD / r.globalCantidad;
+                filas += `<tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      ${imgCell}
+                      <div><strong>${d.nombre}</strong><div style="font-size:11px;color:#888;margin-top:2px">DTF · ${tam.nombre}</div></div>
+                    </div>
+                  </td>
+                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(unitD)}</td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(costoD)}</td>
+                </tr>`;
+            });
+
+            // Diseño adaptativo
             if (r.adaptativo) {
                 filas += `<tr>
                   <td><strong>Diseño adaptativo</strong></td>
                   <td style="text-align:center;vertical-align:middle">1</td>
                   <td></td>
-                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(r.costoAdaptativo)}</strong></td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(r.costoAdaptativo)}</td>
                 </tr>`;
             }
+
+            // Fila resumen integrado
+            const descInt = r.precioPrenda > 0
+                ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} DTF (${nombresImp})`
+                : `${r.designs.length} DTF (${nombresImp})`;
+            filas += `<tr style="background:#f7f9ff;font-weight:600">
+              <td>${descInt}</td>
+              <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(precioUnitInt)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(costoBase)}</td>
+            </tr>`;
 
         return `
   <div style="padding:24px 32px 0">
