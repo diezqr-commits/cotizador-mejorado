@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes — Diez Creatividad</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f7fb;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: white;
+      border-bottom: 1px solid #e8ecf0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .badge {
+      background: #f0f4ff;
+      color: #007bff;
+      border: 1px solid #c8d8ff;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    a.btn-volver {
+      text-decoration: none;
+      color: #666;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: white;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    a.btn-volver:hover { border-color: #007bff; color: #007bff; }
+
+    /* ── CONTENIDO ── */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 15px;
+      pointer-events: none;
+    }
+
+    #busqueda {
+      width: 100%;
+      padding: 10px 12px 10px 36px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #busqueda:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+
+    /* ── BOTONES ── */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+      padding: 10px 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #0056b3; }
+
+    .btn-secondary {
+      background: white;
+      color: #444;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+    }
+    .btn-secondary:hover { border-color: #007bff; color: #007bff; }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+      border-radius: 6px;
+    }
+
+    .btn-edit {
+      background: #f0f4ff;
+      color: #007bff;
+      border: 1px solid #c8d8ff;
+    }
+    .btn-edit:hover { background: #007bff; color: white; }
+
+    .btn-delete {
+      background: #fff0f0;
+      color: #e63946;
+      border: 1px solid #ffc8c8;
+    }
+    .btn-delete:hover { background: #e63946; color: white; }
+
+    /* ── TABLA ── */
+    .box {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    .table-info {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+      color: #888;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .table-info strong { color: #333; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: #fafbfd;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover { color: #007bff; }
+    th.sortable.asc::after { content: " ↑"; }
+    th.sortable.desc::after { content: " ↓"; }
+
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #333;
+      border-bottom: 1px solid #f5f5f5;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafcff; }
+
+    .td-nombre { font-weight: 600; color: #111; }
+    .td-empty { color: #bbb; font-style: italic; font-size: 13px; }
+    .td-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-right: 10px;
+    }
+
+    .nombre-cell {
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── VACÍO ── */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: #aaa;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; margin-bottom: 6px; color: #888; }
+    .empty-state small { font-size: 13px; }
+
+    /* ── MODAL ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      animation: slideUp 0.2s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(16px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #aaa;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 6px;
+    }
+    .btn-close:hover { color: #333; background: #f5f5f5; }
+
+    .modal-body { padding: 20px 24px; }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    label .req { color: #e63946; }
+    label .opt { color: #aaa; font-weight: 400; font-size: 12px; }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: #111;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+
+    input.error-field { border-color: #e63946; }
+    input.error-field:focus { box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    .field-error {
+      color: #e63946;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
+    .field-error.visible { display: block; }
+
+    /* ── MODAL CONFIRMAR ── */
+    .confirm-modal {
+      max-width: 380px;
+      text-align: center;
+    }
+    .confirm-modal .icon { font-size: 40px; margin: 8px 0 16px; }
+    .confirm-modal p { color: #555; font-size: 14px; line-height: 1.5; }
+    .confirm-modal .nombre-confirmacion { font-weight: 700; color: #111; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #22c55e; }
+    .toast.error { background: #e63946; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .header h1 { font-size: 15px; }
+      th:nth-child(3), td:nth-child(3),
+      th:nth-child(4), td:nth-child(4) { display: none; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1>👥 Clientes</h1>
+      <span class="badge" id="badgeTotal">0 registros</span>
+    </div>
+    <div class="header-right">
+      <a href="cotizador-mejorado.html" class="btn-volver">← Volver al cotizador</a>
+    </div>
+  </header>
+
+  <!-- CONTENIDO -->
+  <div class="container">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="busqueda" placeholder="Buscar por nombre, empresa o teléfono...">
+      </div>
+      <button class="btn-primary" onclick="abrirModal()">
+        ＋ Agregar cliente
+      </button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="box">
+      <div class="table-info" id="tableInfo">
+        Cargando...
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable" id="thNombre" onclick="cambiarOrden()">Nombre</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Empresa</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="icon">👤</div>
+        <p>No hay clientes registrados</p>
+        <small>Haz click en "Agregar cliente" para comenzar</small>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─────── MODAL AGREGAR / EDITAR ─────── -->
+  <div class="overlay" id="overlay" onclick="cerrarModal(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 id="modalTitulo">Agregar cliente</h2>
+        <button class="btn-close" onclick="cerrarModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="fNombre">Nombre <span class="req">*</span></label>
+            <input type="text" id="fNombre" placeholder="Ej. Juan Pérez">
+            <span class="field-error" id="errNombre">El nombre es requerido</span>
+          </div>
+          <div class="form-group">
+            <label for="fTelefono">Teléfono <span class="req">*</span></label>
+            <input type="text" id="fTelefono" placeholder="+52 1234567890">
+            <span class="field-error" id="errTelefono">El teléfono es requerido</span>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="fEmail">Email <span class="opt">(opcional)</span></label>
+            <input type="email" id="fEmail" placeholder="correo@ejemplo.com">
+            <span class="field-error" id="errEmail">Ingresa un email válido</span>
+          </div>
+          <div class="form-group">
+            <label for="fEmpresa">Empresa <span class="opt">(opcional)</span></label>
+            <input type="text" id="fEmpresa" placeholder="Nombre de la empresa">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fDireccion">Dirección <span class="opt">(opcional)</span></label>
+          <input type="text" id="fDireccion" placeholder="Calle, colonia, ciudad">
+        </div>
+        <div class="form-group">
+          <label for="fNotas">Notas <span class="opt">(opcional)</span></label>
+          <textarea id="fNotas" placeholder="Cliente frecuente, preferencias, referencias..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" onclick="guardarCliente()">Guardar cliente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────── MODAL CONFIRMAR ELIMINAR ─────── -->
+  <div class="overlay" id="overlayConfirm" onclick="cerrarConfirm(event)">
+    <div class="modal confirm-modal" id="modalConfirm">
+      <div class="modal-body" style="padding: 28px 24px 20px;">
+        <div class="icon">🗑️</div>
+        <h2 style="font-size:16px; margin-bottom:10px;">Eliminar cliente</h2>
+        <p>¿Estás seguro que deseas eliminar a <span class="nombre-confirmacion" id="nombreConfirm"></span>? Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="cerrarConfirm()">Cancelar</button>
+        <button class="btn-delete btn-sm" style="padding:10px 18px; font-size:14px;" onclick="confirmarEliminar()">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ─────── JAVASCRIPT ─────── -->
+  <script>
+    const STORAGE_KEY = 'diez_clientes';
+    let clientes = [];
+    let clienteEnEdicion = null;
+    let clienteAEliminar = null;
+    let ordenAsc = true;
+    let terminoBusqueda = '';
+
+    // ── INICIALIZACIÓN ──────────────────────────────────
+    window.onload = () => {
+      cargarClientes();
+      document.getElementById('busqueda').addEventListener('input', e => {
+        terminoBusqueda = e.target.value.toLowerCase().trim();
+        renderTabla();
+      });
+    };
+
+    // ── STORAGE ─────────────────────────────────────────
+    function cargarClientes() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        clientes = data ? JSON.parse(data) : [];
+      } catch {
+        clientes = [];
+      }
+      renderTabla();
+    }
+
+    function guardarStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clientes));
+    }
+
+    // ── RENDER TABLA ────────────────────────────────────
+    function renderTabla() {
+      const tbody = document.getElementById('cuerpoTabla');
+      const empty = document.getElementById('emptyState');
+      const info  = document.getElementById('tableInfo');
+
+      // Filtrar
+      let lista = clientes.filter(c => {
+        if (!terminoBusqueda) return true;
+        return (
+          c.nombre.toLowerCase().includes(terminoBusqueda) ||
+          (c.empresa || '').toLowerCase().includes(terminoBusqueda) ||
+          (c.telefono || '').toLowerCase().includes(terminoBusqueda)
+        );
+      });
+
+      // Ordenar
+      lista.sort((a, b) => {
+        const cmp = a.nombre.localeCompare(b.nombre, 'es');
+        return ordenAsc ? cmp : -cmp;
+      });
+
+      // Badge
+      document.getElementById('badgeTotal').textContent =
+        clientes.length === 1 ? '1 registro' : `${clientes.length} registros`;
+
+      // Info
+      if (terminoBusqueda) {
+        info.innerHTML = `Mostrando <strong>${lista.length}</strong> de <strong>${clientes.length}</strong> clientes`;
+      } else {
+        info.innerHTML = clientes.length === 0
+          ? 'Sin clientes registrados'
+          : `<strong>${clientes.length}</strong> cliente${clientes.length !== 1 ? 's' : ''} registrado${clientes.length !== 1 ? 's' : ''}`;
+      }
+
+      // Vacío
+      if (lista.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        if (clientes.length > 0 && terminoBusqueda) {
+          empty.innerHTML = `<div class="icon">🔍</div><p>No hay resultados para "<strong>${terminoBusqueda}</strong>"</p><small>Intenta con otro término</small>`;
+        } else {
+          empty.innerHTML = `<div class="icon">👤</div><p>No hay clientes registrados</p><small>Haz click en "Agregar cliente" para comenzar</small>`;
+        }
+        return;
+      }
+
+      empty.style.display = 'none';
+
+      // Filas
+      tbody.innerHTML = lista.map(c => `
+        <tr>
+          <td class="td-nombre">
+            <div class="nombre-cell">
+              <div class="avatar">${iniciales(c.nombre)}</div>
+              ${esc(c.nombre)}
+            </div>
+          </td>
+          <td>${esc(c.telefono)}</td>
+          <td>${c.email ? esc(c.email) : '<span class="td-empty">—</span>'}</td>
+          <td>${c.empresa ? esc(c.empresa) : '<span class="td-empty">—</span>'}</td>
+          <td>
+            <div class="td-actions">
+              <button class="btn-edit btn-sm" onclick="abrirEditar(${c.id})">Editar</button>
+              <button class="btn-delete btn-sm" onclick="pedirEliminar(${c.id})">✕</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function iniciales(nombre) {
+      return nombre.trim().split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(p => p[0].toUpperCase())
+        .join('');
+    }
+
+    function esc(str) {
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+    }
+
+    // ── ORDENAMIENTO ────────────────────────────────────
+    function cambiarOrden() {
+      ordenAsc = !ordenAsc;
+      const th = document.getElementById('thNombre');
+      th.classList.toggle('asc', ordenAsc);
+      th.classList.toggle('desc', !ordenAsc);
+      renderTabla();
+    }
+
+    // ── MODAL AGREGAR / EDITAR ──────────────────────────
+    function abrirModal(clienteId = null) {
+      clienteEnEdicion = clienteId;
+      limpiarForm();
+
+      if (clienteId !== null) {
+        const c = clientes.find(x => x.id === clienteId);
+        if (!c) return;
+        document.getElementById('modalTitulo').textContent = 'Editar cliente';
+        document.getElementById('fNombre').value    = c.nombre   || '';
+        document.getElementById('fTelefono').value  = c.telefono || '';
+        document.getElementById('fEmail').value     = c.email    || '';
+        document.getElementById('fEmpresa').value   = c.empresa  || '';
+        document.getElementById('fDireccion').value = c.direccion|| '';
+        document.getElementById('fNotas').value     = c.notas    || '';
+      } else {
+        document.getElementById('modalTitulo').textContent = 'Agregar cliente';
+      }
+
+      document.getElementById('overlay').classList.add('visible');
+      setTimeout(() => document.getElementById('fNombre').focus(), 100);
+    }
+
+    function abrirEditar(id) { abrirModal(id); }
+
+    function cerrarModal(e) {
+      if (e && e.target !== document.getElementById('overlay')) return;
+      document.getElementById('overlay').classList.remove('visible');
+      limpiarForm();
+    }
+
+    function limpiarForm() {
+      ['fNombre','fTelefono','fEmail','fEmpresa','fDireccion','fNotas'].forEach(id => {
+        document.getElementById(id).value = '';
+        document.getElementById(id).classList.remove('error-field');
+      });
+      ['errNombre','errTelefono','errEmail'].forEach(id => {
+        document.getElementById(id).classList.remove('visible');
+        document.getElementById(id).textContent = '';
+      });
+    }
+
+    function guardarCliente() {
+      // Leer valores
+      const nombre    = document.getElementById('fNombre').value.trim();
+      const telefono  = document.getElementById('fTelefono').value.trim();
+      const email     = document.getElementById('fEmail').value.trim();
+      const empresa   = document.getElementById('fEmpresa').value.trim();
+      const direccion = document.getElementById('fDireccion').value.trim();
+      const notas     = document.getElementById('fNotas').value.trim();
+
+      let valido = true;
+
+      // Validar nombre
+      const errN = document.getElementById('errNombre');
+      const inputN = document.getElementById('fNombre');
+      if (!nombre) {
+        mostrarError(inputN, errN, 'El nombre es requerido'); valido = false;
+      } else if (nombre.length < 3) {
+        mostrarError(inputN, errN, 'El nombre debe tener al menos 3 caracteres'); valido = false;
+      } else {
+        limpiarError(inputN, errN);
+      }
+
+      // Validar teléfono
+      const errT = document.getElementById('errTelefono');
+      const inputT = document.getElementById('fTelefono');
+      const telLimpio = telefono.replace(/[\s\-\+\(\)]/g, '');
+      if (!telefono) {
+        mostrarError(inputT, errT, 'El teléfono es requerido'); valido = false;
+      } else if (telLimpio.length < 10) {
+        mostrarError(inputT, errT, 'El teléfono debe tener al menos 10 dígitos'); valido = false;
+      } else {
+        limpiarError(inputT, errT);
+      }
+
+      // Validar email (si se llenó)
+      const errE = document.getElementById('errEmail');
+      const inputE = document.getElementById('fEmail');
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        mostrarError(inputE, errE, 'Ingresa un email válido'); valido = false;
+      } else {
+        limpiarError(inputE, errE);
+      }
+
+      if (!valido) return;
+
+      if (clienteEnEdicion !== null) {
+        // Editar existente
+        const idx = clientes.findIndex(c => c.id === clienteEnEdicion);
+        if (idx !== -1) {
+          clientes[idx] = {
+            ...clientes[idx],
+            nombre, telefono, email, empresa, direccion, notas
+          };
+        }
+        mostrarToast('✓ Cliente actualizado', 'success');
+      } else {
+        // Agregar nuevo
+        clientes.push({
+          id: Date.now(),
+          nombre, telefono, email, empresa, direccion, notas,
+          fechaCreacion: new Date().toISOString().split('T')[0],
+          fechaUltimaCompra: null
+        });
+        mostrarToast('✓ Cliente agregado', 'success');
+      }
+
+      guardarStorage();
+      renderTabla();
+      document.getElementById('overlay').classList.remove('visible');
+    }
+
+    function mostrarError(input, span, msg) {
+      input.classList.add('error-field');
+      span.textContent = msg;
+      span.classList.add('visible');
+    }
+
+    function limpiarError(input, span) {
+      input.classList.remove('error-field');
+      span.classList.remove('visible');
+    }
+
+    // ── ELIMINAR ────────────────────────────────────────
+    function pedirEliminar(id) {
+      clienteAEliminar = id;
+      const c = clientes.find(x => x.id === id);
+      document.getElementById('nombreConfirm').textContent = c ? c.nombre : '';
+      document.getElementById('overlayConfirm').classList.add('visible');
+    }
+
+    function cerrarConfirm(e) {
+      if (e && e.target !== document.getElementById('overlayConfirm')) return;
+      document.getElementById('overlayConfirm').classList.remove('visible');
+      clienteAEliminar = null;
+    }
+
+    function confirmarEliminar() {
+      if (clienteAEliminar === null) return;
+      clientes = clientes.filter(c => c.id !== clienteAEliminar);
+      guardarStorage();
+      renderTabla();
+      document.getElementById('overlayConfirm').classList.remove('visible');
+      clienteAEliminar = null;
+      mostrarToast('Cliente eliminado', 'error');
+    }
+
+    // ── TOAST ────────────────────────────────────────────
+    let toastTimer;
+    function mostrarToast(msg, tipo = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${tipo} show`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // ── CERRAR MODAL CON ESC ─────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        cerrarModal();
+        cerrarConfirm();
+      }
+      if (e.key === 'Enter' && document.getElementById('overlay').classList.contains('visible')) {
+        guardarCliente();
+      }
+    });
+  </script>
+</body>
+</html>

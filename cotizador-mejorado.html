@@ -357,8 +357,12 @@
         </div>
 
         <div class="form-group">
-            <label for="cliente">Cliente</label>
-            <input type="text" id="cliente" placeholder="Nombre del cliente">
+            <label for="cliente" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <span>Cliente</span>
+                <a href="clientes.html" style="font-size:12px;font-weight:600;color:#007bff;text-decoration:none;padding:3px 10px;border:1px solid #c8d8ff;border-radius:14px;background:#f0f4ff;">👥 Gestionar</a>
+            </label>
+            <input type="text" id="cliente" placeholder="Nombre del cliente" list="lista-clientes" autocomplete="off">
+            <datalist id="lista-clientes"></datalist>
         </div>
 
         <div class="form-group" id="playera-group">
@@ -1052,9 +1056,43 @@
 
     document.getElementById("btn-generar").addEventListener("click", generarCotizacion);
 
+    // ── AUTOCOMPLETADO DE CLIENTES (desde clientes.html / localStorage) ──
+    const CLIENTES_KEY = "diez_clientes";
+
+    function cargarListaClientes() {
+        try {
+            const data = JSON.parse(localStorage.getItem(CLIENTES_KEY) || "[]");
+            const dl = document.getElementById("lista-clientes");
+            dl.innerHTML = data
+                .slice()
+                .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+                .map(c => {
+                    const extra = c.empresa ? ` — ${c.empresa}` : (c.telefono ? ` — ${c.telefono}` : "");
+                    return `<option value="${c.nombre.replace(/"/g,'&quot;')}">${(c.nombre + extra).replace(/"/g,'&quot;')}</option>`;
+                })
+                .join("");
+        } catch {}
+    }
+
+    function registrarCompraCliente(nombre) {
+        if (!nombre || nombre === "Sin nombre") return;
+        try {
+            const data = JSON.parse(localStorage.getItem(CLIENTES_KEY) || "[]");
+            const idx = data.findIndex(c => c.nombre.trim().toLowerCase() === nombre.trim().toLowerCase());
+            if (idx !== -1) {
+                data[idx].fechaUltimaCompra = new Date().toISOString().split("T")[0];
+                localStorage.setItem(CLIENTES_KEY, JSON.stringify(data));
+            }
+        } catch {}
+    }
+
+    cargarListaClientes();
+    document.getElementById("cliente").addEventListener("focus", cargarListaClientes);
+
     // ── GENERAR COTIZACIÓN ──
     function generarCotizacion() {
         const cliente = document.getElementById("cliente").value.trim() || "Sin nombre";
+        registrarCompraCliente(cliente);
         const folio   = String(Date.now()).slice(-6);
         const fecha   = new Date().toLocaleDateString("es-MX", {day:"2-digit", month:"long", year:"numeric"});
         const fmt     = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
