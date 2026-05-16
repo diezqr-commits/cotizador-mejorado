@@ -1130,10 +1130,17 @@
   .cliente-box { background:#f7f8fa; padding:18px 32px; border-bottom:1px solid #e8e8e8; display:flex; justify-content:space-between; align-items:center; }
   .cli-nombre { font-size:17px; font-weight:600; color:#111; }
   .badge { display:inline-block; background:#111; color:white; font-size:11px; font-weight:600; letter-spacing:1px; padding:4px 10px; border-radius:4px; text-transform:uppercase; }
-  table { width:100%; border-collapse:collapse; }
-  th { font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:.8px; padding:0 0 10px; border-bottom:1px solid #e0e0e0; }
-  th:last-child { text-align:right; }
-  td { padding:10px 0; font-size:14px; color:#333; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  table { width:100%; border-collapse:collapse; table-layout:auto; }
+  th { font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:.8px; padding:0 12px 10px; border-bottom:1px solid #e0e0e0; white-space:nowrap; }
+  th:first-child { padding-left:0; }
+  th:last-child { padding-right:0; text-align:right; }
+  td { padding:10px 12px; font-size:14px; color:#333; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  td:first-child { padding-left:0; }
+  td:last-child { padding-right:0; }
+  /* Columnas numéricas: ancho mínimo, alineadas a la derecha y sin partir */
+  th:nth-child(2), td:nth-child(2) { min-width:48px; text-align:center; white-space:nowrap; }
+  th:nth-child(3), td:nth-child(3) { min-width:88px; text-align:right;  white-space:nowrap; }
+  th:nth-child(4), td:nth-child(4) { min-width:96px; text-align:right;  white-space:nowrap; }
   tr:last-child td { border-bottom:none; }
   .sep { border-top:2px solid #111; margin:16px 0 0; }
   .totales { padding:0 32px 28px; }
@@ -2128,7 +2135,6 @@
 
         if (r.tecnica === "dtf") {
             const bajadaXDiseno = r.designs.length > 0 ? r.costoBajadas / r.designs.length : 0;
-            const nombresImp    = r.designs.map(d => d.nombre).join(", ");
             const costoBase     = r.totalPedido - r.costoAdaptativo;
             const precioUnitInt = r.globalCantidad > 0 ? costoBase / r.globalCantidad : 0;
 
@@ -2178,8 +2184,8 @@
 
             // Fila resumen integrado
             const descInt = r.precioPrenda > 0
-                ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} DTF (${nombresImp})`
-                : `${r.designs.length} DTF (${nombresImp})`;
+                ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} DTF`
+                : `+${r.designs.length} DTF`;
             filas += `<tr style="background:#f7f9ff;font-weight:600">
               <td>${descInt}</td>
               <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
