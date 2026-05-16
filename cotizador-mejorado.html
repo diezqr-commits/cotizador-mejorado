@@ -1106,6 +1106,7 @@
         try {
             localStorage.setItem('diez_ultima_cotizacion', JSON.stringify({ folio, cliente, metodo }));
         } catch(e) {}
+        const ordenURL = new URL('orden-trabajo-playera.html', window.location.href).href;
 
         let bodyHTML = "";
 
@@ -1202,7 +1203,7 @@
     <button onclick="window.print()" style="background:#111;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
       Imprimir / Guardar PDF
     </button>
-    <button onclick="window.opener && window.opener.abrirOrdenDeTrabajo ? window.opener.abrirOrdenDeTrabajo() : window.open('orden-trabajo-playera.html','_blank')" style="background:#1a7a1a;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
+    <button onclick="window.open('${ordenURL}','_blank')" style="background:#1a7a1a;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
       Generar orden de trabajo
     </button>
     ${metodo === "dtfuv" ? `<a id="btn-svg" href="${generarSVGDataURI()}" download="distribucion-dtf.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}
