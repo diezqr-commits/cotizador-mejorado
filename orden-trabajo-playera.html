@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orden de Trabajo — Playera</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #d8dde3;
+      padding: 20px 16px 50px;
+      font-size: 12px;
+      color: #111;
+    }
+
+    /* ── CONTROLES (no se imprimen) ── */
+    .controls {
+      max-width: 816px;
+      margin: 0 auto 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .controls button {
+      font-family: inherit; font-size: 12px;
+      padding: 8px 16px; border-radius: 7px;
+      border: none; cursor: pointer; font-weight: 600; transition: all 0.2s;
+    }
+    .btn-print { background: #111; color: white; }
+    .btn-print:hover { background: #333; }
+    .btn-new { background: white; color: #333; border: 1px solid #ccc; }
+    .btn-new:hover { background: #f5f5f5; }
+
+    .autofill-banner {
+      background: #d4edda; border: 1px solid #c3e6cb;
+      border-radius: 7px; padding: 7px 14px;
+      font-size: 12px; color: #155724; font-weight: 600; display: none;
+    }
+
+    /* ── HOJA CARTA (816×1056 a 96dpi) ── */
+    .hoja {
+      width: 816px;
+      min-height: 1056px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    .ot-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 20px 11px;
+      border-bottom: 3px solid #111;
+    }
+    .ot-header h1 {
+      font-size: 17px; font-weight: 900;
+      text-transform: uppercase; letter-spacing: -0.2px;
+    }
+    .ot-header h1 span { font-weight: 300; color: #555; }
+    .logo-area { width: 70px; height: 50px; display: flex; align-items: center; justify-content: center; }
+    .logo-area img { max-width: 70px; max-height: 50px; object-fit: contain; }
+    .logo-ph {
+      width: 70px; height: 50px; border: 1.5px dashed #ccc; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      color: #ccc; font-size: 9px; text-align: center; line-height: 1.3;
+    }
+
+    /* ── META: ORDEN / RUTA ── */
+    .row-meta { display: flex; border-bottom: 2px solid #111; }
+    .meta-cell {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-right: 1.5px solid #ddd;
+    }
+    .meta-cell:last-child { border-right: none; flex: 1; }
+    .meta-cell label {
+      font-size: 9px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.5px; color: #555; white-space: nowrap;
+    }
+    .meta-cell.dark label {
+      background: #111; color: white; padding: 2px 7px; border-radius: 3px;
+    }
+    .meta-cell input {
+      font-size: 15px; font-weight: 800;
+      border: none; outline: none; font-family: inherit; color: #111; width: 80px;
+    }
+
+    /* RUTA */
+    .ruta-btn {
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      background: #f0f0f0; border: 1.5px dashed #bbb; border-radius: 4px;
+      padding: 3px 10px; cursor: pointer; color: #666;
+      transition: all 0.15s;
+    }
+    .ruta-btn:hover { border-color: #007bff; color: #007bff; background: #f0f6ff; }
+    .ruta-nombre {
+      font-size: 13px; font-weight: 700; color: #111;
+      cursor: pointer; max-width: 160px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ruta-nombre:hover { text-decoration: underline; color: #007bff; }
+    .ruta-fallback {
+      font-size: 13px; font-weight: 700;
+      border: none; outline: none; font-family: inherit; color: #111;
+      width: 160px; background: transparent;
+    }
+
+    /* ── VISUAL ── */
+    .seccion-visual {
+      padding: 9px 20px; border-bottom: 1.5px solid #ddd;
+      display: flex; flex-direction: column; flex: 1; min-height: 0;
+    }
+    .visual-label { font-size: 10px; font-style: italic; color: #666; margin-bottom: 5px; }
+
+    .visual-upload-area {
+      flex: 1; min-height: 80px;
+      border: 1.5px dashed #ccc; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 10px; cursor: pointer;
+      transition: border-color 0.2s; flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .visual-upload-area:hover { border-color: #007bff; }
+    .visual-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .upload-hint { text-align: center; color: #bbb; pointer-events: none; }
+    .upload-hint .icon { font-size: 24px; margin-bottom: 4px; }
+    .upload-hint p { font-size: 11px; line-height: 1.5; }
+
+    #previewContainer { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
+    .preview-wrap { position: relative; }
+    .preview-img { max-height: 116px; max-width: 170px; border-radius: 4px; object-fit: contain; display: block; }
+    .btn-remove-img {
+      position: absolute; top: -5px; right: -5px;
+      background: #e63946; color: white; border: none; border-radius: 50%;
+      width: 16px; height: 16px; font-size: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1; font-family: inherit;
+    }
+
+    /* ── TÉCNICA + CHECKS ── */
+    .row-tecnica {
+      display: grid; grid-template-columns: 1fr 1fr;
+      border-top: 1.5px solid #ddd; border-bottom: 1.5px solid #ddd;
+    }
+    .cell-tecnica {
+      padding: 7px 20px; display: flex; align-items: center;
+      gap: 10px; border-right: 1.5px solid #ddd;
+    }
+    .tecnica-lbl {
+      font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+      background: #555; color: white; padding: 2px 7px; border-radius: 3px; white-space: nowrap;
+    }
+    .tecnica-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .chip {
+      padding: 3px 10px; border-radius: 20px; border: 1.5px solid #ddd;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      transition: all 0.15s; user-select: none; color: #555;
+    }
+    .chip:hover { border-color: #007bff; color: #007bff; }
+    .chip.active { background: #111; color: white; border-color: #111; }
+
+    .cell-checkboxes {
+      padding: 7px 20px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+    }
+    .check-row { display: flex; align-items: center; gap: 12px; }
+    .check-label-text {
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #333; width: 115px;
+    }
+    .check-group { display: flex; gap: 14px; }
+    .check-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #555; cursor: pointer; }
+    .check-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: #111; cursor: pointer; }
+
+    /* ── DESCRIPCIÓN + FECHA ── */
+    .row-desc {
+      display: grid; grid-template-columns: 1fr 180px;
+      border-bottom: 1.5px solid #ddd;
+    }
+    .cell-desc { padding: 9px 14px; border-right: 1.5px solid #ddd; }
+    .cell-desc textarea {
+      width: 100%; min-height: 64px;
+      border: 1.5px solid #e8e8e8; border-radius: 5px;
+      padding: 7px 9px; font-family: inherit;
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      resize: none; color: #111; line-height: 1.6;
+    }
+    .cell-desc textarea:focus { outline: none; border-color: #007bff; }
+    .cell-desc textarea::placeholder { font-weight: 400; text-transform: none; color: #bbb; }
+
+    .cell-fecha {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #1a7a1a; gap: 5px; padding: 10px;
+    }
+    .fecha-title {
+      font-size: 9px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.65);
+    }
+    .cell-fecha input[type="date"] {
+      background: transparent; border: none; font-family: inherit;
+      font-size: 14px; font-weight: 800; color: white;
+      text-align: center; outline: none; cursor: pointer;
+    }
+    .cell-fecha input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
+
+    /* ── TABLA DE TALLAS ── */
+    .tallas-table { width: 100%; border-collapse: collapse; }
+    .tallas-table th {
+      background: #111; color: white; padding: 6px 3px;
+      text-align: center; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.2px; border-right: 1px solid #333;
+    }
+    .tallas-table th:first-child { text-align: left; padding-left: 14px; }
+    .tallas-table th:nth-child(2) { text-align: left; }
+    .tallas-table th:last-child { border-right: none; width: 24px; }
+
+    .tallas-table td {
+      border-bottom: 1px solid #eee; border-right: 1px solid #eee;
+      padding: 0; text-align: center;
+    }
+    .tallas-table td:first-child, .tallas-table td:nth-child(2) { text-align: left; }
+    .tallas-table td:last-child { border-right: none; }
+    .tallas-table tr:last-child td { border-bottom: none; }
+
+    .tallas-table td input[type="text"],
+    .tallas-table td input[type="number"] {
+      width: 100%; border: none; outline: none; padding: 6px 3px;
+      text-align: center; font-family: inherit;
+      font-size: 12px; font-weight: 600; color: #111; background: transparent;
+    }
+    .tallas-table td:first-child input { text-align: left; padding-left: 14px; font-weight: 700; text-transform: uppercase; }
+    .tallas-table td:nth-child(2) input { text-align: left; }
+    .tallas-table td input:focus { background: #f0f6ff; }
+    .tallas-table td input[type="number"]::-webkit-inner-spin-button,
+    .tallas-table td input[type="number"]::-webkit-outer-spin-button { opacity: 0; }
+    .tallas-table td input[type="number"]:focus::-webkit-inner-spin-button { opacity: 1; }
+
+    .td-total { font-weight: 800; font-size: 12px; padding: 6px 3px !important; color: #111; }
+
+    .row-total td { background: #f5f5f5; border-top: 2px solid #111; padding: 6px 3px; }
+    .row-total .tot-label {
+      padding-left: 14px; font-weight: 800; font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* ── BOTÓN + (abajo de tabla) ── */
+    .add-row-wrap { padding: 5px 14px; border-top: 1px solid #eee; }
+    .btn-add-fila {
+      background: none; border: 1.5px dashed #ccc; border-radius: 5px;
+      color: #999; font-size: 12px; font-family: inherit; font-weight: 600;
+      cursor: pointer; padding: 4px 12px; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-add-fila:hover { border-color: #007bff; color: #007bff; }
+
+    .btn-remove-row {
+      background: none; border: none; color: #ddd;
+      font-size: 13px; cursor: pointer; padding: 4px 5px;
+      line-height: 1; transition: color 0.15s;
+    }
+    .btn-remove-row:hover { color: #e63946; }
+
+    /* ── FOOTER ── */
+    .ot-footer {
+      margin-top: auto; padding: 8px 20px;
+      border-top: 1.5px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-brand { font-size: 10px; color: #aaa; font-weight: 600; }
+    .footer-total { font-size: 13px; font-weight: 800; color: #111; }
+
+    /* ── PRINT ── */
+    @media print {
+      body { background: white; padding: 0; }
+      .controls { display: none; }
+      .hoja { box-shadow: none; width: 100%; min-height: 0; height: 100vh; }
+      .visual-upload-area { border: 1px dashed #ccc; cursor: default; min-height: 80px; }
+      .btn-remove-row, .btn-remove-img, .add-row-wrap { display: none; }
+      .ruta-btn { display: none !important; }
+      textarea, input { background: transparent !important; }
+      @page { margin: 0.75cm; size: letter portrait; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CONTROLES -->
+  <div class="controls">
+    <button class="btn-print" onclick="window.print()">🖨 Imprimir / PDF</button>
+    <button class="btn-new" onclick="nuevaOrden()">↺ Nueva orden</button>
+    <div class="autofill-banner" id="autofillBanner"></div>
+  </div>
+
+  <!-- HOJA -->
+  <div class="hoja">
+
+    <div class="ot-header">
+      <h1>ORDEN DE TRABAJO INTERNA <span>| PLAYERA</span></h1>
+      <div class="logo-area">
+        <img src="logo-diez.png" alt="Diez"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="logo-ph" style="display:none">LOGO<br>DIEZ</div>
+      </div>
+    </div>
+
+    <div class="row-meta">
+      <div class="meta-cell">
+        <label>No. Orden</label>
+        <input type="text" id="numOrden" placeholder="0000" maxlength="6">
+      </div>
+      <div class="meta-cell dark" style="flex:1">
+        <label>RUTA</label>
+        <button class="ruta-btn" id="rutaBtn" onclick="seleccionarCarpeta()">Seleccionar carpeta…</button>
+        <span class="ruta-nombre" id="rutaNombre" style="display:none" onclick="rutaClick()" title="Click para opciones"></span>
+        <input type="text" class="ruta-fallback" id="rutaFallback" placeholder="ruta/carpeta" style="display:none">
+      </div>
+    </div>
+
+    <div class="seccion-visual">
+      <div class="visual-label">Visual:</div>
+      <div class="visual-upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept="image/*" multiple onchange="agregarImagenes(event)">
+        <div class="upload-hint" id="uploadHint">
+          <div class="icon">🖼</div>
+          <p>Click o arrastra imágenes aquí<br>o <strong>pega desde portapapeles</strong> (Ctrl+V)</p>
+        </div>
+        <div id="previewContainer"></div>
+      </div>
+    </div>
+
+    <div class="row-tecnica">
+      <div class="cell-tecnica">
+        <span class="tecnica-lbl">Técnica</span>
+        <div class="tecnica-chips" id="chipsContainer">
+          <div class="chip" onclick="toggleChip(this)" data-val="SERI">SERI</div>
+          <div class="chip" onclick="toggleChip(this)" data-val="DTF">DTF</div>
+          <div class="chip" onclick="toggleChip(this)" data-val="VINIL">VINIL</div>
+          <div class="chip" onclick="toggleChip(this)" data-val="BORDADO">BORDADO</div>
+          <div class="chip" onclick="toggleChip(this)" data-val="SUBLIMACIÓN">SUBLIMACIÓN</div>
+        </div>
+      </div>
+      <div class="cell-checkboxes">
+        <div class="check-row">
+          <span class="check-label-text">Personalizado</span>
+          <div class="check-group">
+            <label class="check-item"><input type="checkbox" name="custom" value="si"> SI</label>
+            <label class="check-item"><input type="checkbox" name="custom" value="no"> NO</label>
+          </div>
+        </div>
+        <div class="check-row">
+          <span class="check-label-text">Cambio de tinta</span>
+          <div class="check-group">
+            <label class="check-item"><input type="checkbox" name="tinta" value="si"> SI</label>
+            <label class="check-item"><input type="checkbox" name="tinta" value="no"> NO</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-desc">
+      <div class="cell-desc">
+        <textarea id="descripcion"
+          placeholder="Describe el trabajo: modelo, colores, posición de impresión, tintas..."></textarea>
+      </div>
+      <div class="cell-fecha">
+        <div class="fecha-title">Fecha de entrega</div>
+        <input type="date" id="fechaEntrega">
+      </div>
+    </div>
+
+    <table class="tallas-table" id="tablaModelos">
+      <thead>
+        <tr>
+          <th style="width:82px">Modelo</th>
+          <th style="width:108px">Color</th>
+          <th>T-12</th><th>T-6</th><th>T-16</th>
+          <th>CH</th><th>M</th><th>G</th>
+          <th>XL</th><th>XXL</th><th>XXXL</th>
+          <th style="width:48px">TOTAL</th>
+          <th style="width:24px"></th>
+        </tr>
+      </thead>
+      <tbody id="bodyModelos"></tbody>
+      <tfoot>
+        <tr class="row-total">
+          <td colspan="2" class="tot-label">TOTAL</td>
+          <td class="td-total" id="tot-t12">—</td>
+          <td class="td-total" id="tot-t6">—</td>
+          <td class="td-total" id="tot-t16">—</td>
+          <td class="td-total" id="tot-ch">—</td>
+          <td class="td-total" id="tot-m">—</td>
+          <td class="td-total" id="tot-g">—</td>
+          <td class="td-total" id="tot-xl">—</td>
+          <td class="td-total" id="tot-xxl">—</td>
+          <td class="td-total" id="tot-xxxl">—</td>
+          <td class="td-total" id="tot-grand" style="font-size:14px"></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="add-row-wrap">
+      <button class="btn-add-fila" onclick="agregarFila()">＋ Agregar modelo</button>
+    </div>
+
+    <div class="ot-footer">
+      <div class="footer-brand">Diez Creatividad Impresa 2025</div>
+      <div class="footer-total" id="footerTotal"></div>
+    </div>
+
+  </div><!-- /hoja -->
+
+  <script>
+    const COLS = ['t12','t6','t16','ch','m','g','xl','xxl','xxxl'];
+    let filaId = 0;
+    let dirHandle = null;
+    const soportaFSA = typeof window.showDirectoryPicker === 'function';
+
+    /* ── RUTA ── */
+    function initRuta() {
+      if (!soportaFSA) {
+        document.getElementById('rutaBtn').style.display = 'none';
+        document.getElementById('rutaFallback').style.display = 'block';
+      }
+    }
+
+    async function seleccionarCarpeta() {
+      try {
+        dirHandle = await window.showDirectoryPicker();
+        mostrarNombreRuta(dirHandle.name);
+      } catch(e) {
+        if (e.name !== 'AbortError') console.warn('showDirectoryPicker:', e);
+      }
+    }
+
+    function mostrarNombreRuta(nombre) {
+      const btn = document.getElementById('rutaBtn');
+      const span = document.getElementById('rutaNombre');
+      btn.style.display = 'none';
+      span.textContent = nombre;
+      span.style.display = 'inline';
+    }
+
+    async function rutaClick() {
+      if (!dirHandle) return;
+      try {
+        await dirHandle.requestPermission({ mode: 'read' });
+      } catch(e) {}
+      const msg = `Carpeta seleccionada: "${dirHandle.name}"\n\nNo es posible abrir Finder directamente desde el navegador.\nCopia el nombre y búscala manualmente.`;
+      alert(msg);
+    }
+
+    function resetRuta() {
+      dirHandle = null;
+      const btn = document.getElementById('rutaBtn');
+      const span = document.getElementById('rutaNombre');
+      const fb = document.getElementById('rutaFallback');
+      span.style.display = 'none';
+      span.textContent = '';
+      fb.value = '';
+      if (soportaFSA) { btn.style.display = 'inline-flex'; fb.style.display = 'none'; }
+      else            { btn.style.display = 'none';        fb.style.display = 'block'; }
+    }
+
+    const TECNICA_MAP = {
+      estandar:     ['SERI'],
+      presecada:    ['SERI'],
+      bordado:      ['BORDADO'],
+      promocionales: []
+    };
+
+    /* ── INIT ── */
+    window.onload = () => {
+      const d = new Date();
+      d.setDate(d.getDate() + 3);
+      document.getElementById('fechaEntrega').value = d.toISOString().split('T')[0];
+      initRuta();
+      intentarAutofill();
+      document.addEventListener('paste', manejarPegado);
+
+      // Checkboxes exclusivos por grupo
+      document.querySelectorAll('input[name="custom"], input[name="tinta"]').forEach(cb => {
+        cb.addEventListener('change', function() {
+          document.querySelectorAll(`input[name="${this.name}"]`).forEach(o => {
+            if (o !== this) o.checked = false;
+          });
+        });
+      });
+    };
+
+    /* ── AUTOFILL ── */
+    function intentarAutofill() {
+      try {
+        const raw = localStorage.getItem('diez_ultima_cotizacion');
+        if (!raw) { iniciarVacio(); return; }
+        const c = JSON.parse(raw);
+        let lleno = [];
+
+        if (c.folio)    { document.getElementById('numOrden').value = c.folio; lleno.push('No. Orden'); }
+
+        const tecnicas = TECNICA_MAP[c.metodo] || [];
+        tecnicas.forEach(t => {
+          const chip = document.querySelector(`.chip[data-val="${t}"]`);
+          if (chip) chip.classList.add('active');
+        });
+        if (tecnicas.length) lleno.push('Técnica');
+
+        if (c.descripcion) { document.getElementById('descripcion').value = c.descripcion; lleno.push('Descripción'); }
+        if (c.fechaEntrega) { document.getElementById('fechaEntrega').value = c.fechaEntrega; lleno.push('Fecha'); }
+
+        // Filas de modelos/colores (si el cotizador las pasa)
+        if (c.filas && c.filas.length > 0) {
+          c.filas.forEach(f => {
+            const id = agregarFila();
+            const tr = document.getElementById(`fila-${id}`);
+            if (!tr) return;
+            const inps = tr.querySelectorAll('input');
+            if (f.modelo) inps[0].value = f.modelo;
+            if (f.color)  inps[1].value = f.color;
+            COLS.forEach((col, i) => { if (f[col]) inps[2 + i].value = f[col]; });
+          });
+          recalcular();
+          lleno.push('Modelos');
+        } else {
+          iniciarVacio();
+        }
+
+        if (lleno.length) {
+          const b = document.getElementById('autofillBanner');
+          b.style.display = 'block';
+          b.textContent = `✓ Importado del cotizador: ${lleno.join(' · ')}`;
+        }
+      } catch(e) {
+        iniciarVacio();
+      }
+    }
+
+    function iniciarVacio() {
+      if (document.getElementById('bodyModelos').children.length === 0) {
+        agregarFila(); agregarFila(); agregarFila();
+      }
+    }
+
+    /* ── TABLA ── */
+    function agregarFila() {
+      const id = ++filaId;
+      const tr = document.createElement('tr');
+      tr.id = `fila-${id}`;
+      tr.innerHTML = `
+        <td><input type="text" placeholder="C0304" oninput="recalcular()"></td>
+        <td><input type="text" placeholder="Color" oninput="recalcular()"></td>
+        ${COLS.map(c => `<td><input type="number" min="0" id="${c}-${id}" oninput="recalcular()"></td>`).join('')}
+        <td class="td-total" id="rowtot-${id}">—</td>
+        <td><button class="btn-remove-row" onclick="eliminarFila(${id})">✕</button></td>
+      `;
+      document.getElementById('bodyModelos').appendChild(tr);
+      recalcular();
+      return id;
+    }
+
+    function eliminarFila(id) {
+      const tr = document.getElementById(`fila-${id}`);
+      if (tr) tr.remove();
+      recalcular();
+    }
+
+    function recalcular() {
+      const filas = document.querySelectorAll('#bodyModelos tr');
+      const totales = {}; COLS.forEach(c => totales[c] = 0);
+      let grand = 0;
+
+      filas.forEach(tr => {
+        const rid = tr.id.replace('fila-','');
+        let rowTot = 0;
+        COLS.forEach(c => {
+          const inp = document.getElementById(`${c}-${rid}`);
+          const val = inp ? (parseInt(inp.value) || 0) : 0;
+          totales[c] += val; rowTot += val; grand += val;
+        });
+        const rtEl = document.getElementById(`rowtot-${rid}`);
+        if (rtEl) rtEl.textContent = rowTot > 0 ? rowTot : '—';
+      });
+
+      COLS.forEach(c => {
+        const el = document.getElementById(`tot-${c}`);
+        if (el) el.textContent = totales[c] > 0 ? totales[c] : '—';
+      });
+
+      const gt = document.getElementById('tot-grand');
+      const ft = document.getElementById('footerTotal');
+      if (grand > 0) { gt.textContent = grand; ft.textContent = `Total: ${grand} piezas`; }
+      else           { gt.textContent = '—';   ft.textContent = ''; }
+    }
+
+    /* ── IMÁGENES ── */
+    function agregarImagenes(e) {
+      Array.from(e.target.files).forEach(leerImagen);
+    }
+
+    function leerImagen(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => mostrarImagen(ev.target.result);
+      reader.readAsDataURL(file);
+    }
+
+    function mostrarImagen(src) {
+      const container = document.getElementById('previewContainer');
+      document.getElementById('uploadHint').style.display = 'none';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'preview-wrap';
+
+      const img = document.createElement('img');
+      img.src = src; img.className = 'preview-img';
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-remove-img'; btn.textContent = '✕'; btn.title = 'Quitar';
+      btn.onclick = e => {
+        e.stopPropagation(); wrap.remove();
+        if (!container.children.length)
+          document.getElementById('uploadHint').style.display = 'block';
+      };
+
+      wrap.appendChild(img); wrap.appendChild(btn);
+      container.appendChild(wrap);
+    }
+
+    /* ── PEGAR PORTAPAPELES ── */
+    function manejarPegado(e) {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      let hayImagen = false;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) { leerImagen(item.getAsFile()); hayImagen = true; }
+      }
+      if (hayImagen) e.preventDefault();
+    }
+
+    /* ── CHIPS ── */
+    function toggleChip(el) { el.classList.toggle('active'); }
+
+    /* ── NUEVA ORDEN ── */
+    function nuevaOrden() {
+      if (!confirm('¿Limpiar todos los datos para una nueva orden?')) return;
+      ['numOrden','descripcion'].forEach(id => document.getElementById(id).value = '');
+      resetRuta();
+      document.getElementById('previewContainer').innerHTML = '';
+      document.getElementById('uploadHint').style.display = 'block';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('autofillBanner').style.display = 'none';
+      document.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.getElementById('bodyModelos').innerHTML = '';
+      filaId = 0;
+      const d = new Date(); d.setDate(d.getDate() + 3);
+      document.getElementById('fechaEntrega').value = d.toISOString().split('T')[0];
+      agregarFila(); agregarFila(); agregarFila();
+    }
+  </script>
+</body>
+</html>
