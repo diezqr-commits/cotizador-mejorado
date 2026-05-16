@@ -615,9 +615,12 @@
         const esVT      = metodo === "viniltf";
 
         // Mostrar u ocultar campos del box de datos
+        // viniltf muestra modelo/cantidad solo cuando técnica=dtf (default al entrar)
         document.getElementById("tipo-prenda-group").style.display = esBordado ? "block" : "none";
-        document.getElementById("playera-group").style.display     = (esPromo || esDTF || esVT) ? "none" : "block";
-        document.getElementById("cantidad-group").style.display    = (esPromo || esDTF || esVT) ? "none" : "block";
+        document.getElementById("playera-group").style.display     = (esPromo || esDTF || (esVT && vtTecnica === "vinil")) ? "none" : "block";
+        document.getElementById("cantidad-group").style.display    = (esPromo || esDTF || (esVT && vtTecnica === "vinil")) ? "none" : "block";
+        document.querySelector("label[for='playera']").textContent = esVT ? "Modelo de playera" : "Modelo de prenda";
+        document.querySelector("label[for='cantidad']").textContent= esVT ? "Cantidad de playeras" : "Cantidad";
 
         // Ponchado solo en bordado
         document.getElementById("ponchado-box").style.display = esBordado ? "block" : "none";
@@ -666,6 +669,10 @@
         // Diseño adaptativo solo aplica para DTF
         document.getElementById("vt-adaptativo-row").style.display = esDTF ? "flex" : "none";
         if (!esDTF) document.getElementById("vt-adaptativo").checked = false;
+        // Modelo y cantidad: solo para DTF (todas las impresiones aplican a las mismas playeras)
+        document.getElementById("playera-group").style.display  = esDTF ? "block" : "none";
+        document.getElementById("cantidad-group").style.display = esDTF ? "block" : "none";
+        if (esDTF) cargarPlayeras();
         // Limpiar items al cambiar técnica (cada técnica tiene campos distintos)
         document.getElementById("items").innerHTML = "";
         document.getElementById("resultado").textContent = "Total: $0.00";
@@ -1756,19 +1763,13 @@
                         <label>Nombre de la impresión</label>
                         <input type="text" class="vt-nombre" placeholder="Ej: Frente, Espalda, Logo...">
                     </div>
-                    <div class="item-grid">
-                        <div class="form-group">
-                            <label>Tamaño</label>
-                            <select class="vt-tamano">
-                                <option value="1/4">1/4 carta (13.97×10.8 cm)</option>
-                                <option value="1/2">1/2 carta (21.59×13.97 cm)</option>
-                                <option value="carta">Carta (21.59×27.94 cm)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Cantidad de playeras</label>
-                            <input type="number" class="vt-cantidad" value="1" min="1">
-                        </div>
+                    <div class="form-group">
+                        <label>Tamaño</label>
+                        <select class="vt-tamano">
+                            <option value="1/4">1/4 carta (13.97×10.8 cm)</option>
+                            <option value="1/2">1/2 carta (21.59×13.97 cm)</option>
+                            <option value="carta">Carta (21.59×27.94 cm)</option>
+                        </select>
                     </div>
                     <label class="check-label" style="font-weight:400;margin-top:8px">
                         <input type="checkbox" class="vt-rotacion" checked>
@@ -1784,7 +1785,6 @@
         vtActualizarAR(div);
 
         div.querySelector(".vt-tamano").addEventListener("change", () => { vtActualizarAR(div); calcular(); });
-        div.querySelector(".vt-cantidad").addEventListener("input", calcular);
         div.querySelector(".vt-rotacion").addEventListener("change", calcular);
         div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
 
@@ -1907,6 +1907,23 @@
 
     // ── CALCULAR DTF (módulo viniltf) ──
     function calcularVT_DTF() {
+        // Cantidad y modelo son globales (todas las impresiones aplican a las mismas playeras)
+        const globalCantidad = parseInt(document.getElementById("cantidad").value) || 0;
+        const playeraSelect  = document.getElementById("playera");
+        const precioPrenda   = parseFloat(playeraSelect.value) || 0;
+        const nombrePrenda   = playeraSelect.options[playeraSelect.selectedIndex]
+                                ? playeraSelect.options[playeraSelect.selectedIndex].text.split(" — ")[0]
+                                : "";
+
+        const errCant = document.getElementById("error-cantidad");
+        if (globalCantidad < 1) {
+            errCant.textContent = "La cantidad debe ser mayor a 0";
+            document.getElementById("resultado").textContent = "Error: cantidad inválida";
+            document._vtResult = null;
+            return;
+        }
+        errCant.textContent = "";
+
         const items = [...document.querySelectorAll(".vt-dtf-item")];
         if (!items.length) {
             document.getElementById("resultado").textContent = "Agrega impresiones para calcular";
@@ -1917,78 +1934,63 @@
         const designs = [];
         let hayError = false;
         items.forEach((item, idx) => {
-            const errDiv = item.querySelector(".vt-error");
-            const tamanoKey = item.querySelector(".vt-tamano").value;
-            const cantidad  = parseInt(item.querySelector(".vt-cantidad").value) || 0;
-            const rotacion  = item.querySelector(".vt-rotacion").checked;
-            const nombre    = item.querySelector(".vt-nombre").value.trim() || `D${idx+1}`;
+            const errDiv   = item.querySelector(".vt-error");
+            const tamanoKey= item.querySelector(".vt-tamano").value;
+            const rotacion = item.querySelector(".vt-rotacion").checked;
+            const nombre   = item.querySelector(".vt-nombre").value.trim() || `Diseño ${idx+1}`;
             errDiv.style.display = "none"; errDiv.textContent = ""; item._vt = null;
-            if (cantidad <= 0) {
-                errDiv.textContent = "Cantidad debe ser mayor a 0";
-                errDiv.style.display = "block"; hayError = true; return;
-            }
             const tam = VT_TAMAÑOS[tamanoKey];
             const prev = item.querySelector(".promo-preview");
             const imgSrc = prev && prev.style.display !== "none" ? prev.src : null;
-            const d = {idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, cantidad, rotacion, imgSrc};
+            const d = {idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, rotacion, imgSrc};
             item._vt = d; designs.push(d);
         });
 
-        if (!designs.length) {
-            document.getElementById("resultado").textContent = hayError ? "Corrige los errores antes de calcular" : "Agrega impresiones para calcular";
+        if (!designs.length || hayError) {
+            document.getElementById("resultado").textContent = "Agrega impresiones para calcular";
             document._vtResult = null;
             return;
         }
 
-        // Expandir piezas para bin packing
+        // Bin packing: cada diseño genera globalCantidad piezas en la tira
         const pieces = [];
         designs.forEach(d => {
-            for (let i = 0; i < d.cantidad; i++)
+            for (let i = 0; i < globalCantidad; i++)
                 pieces.push({w: d.base + VT_DTF_GAP, h: d.altura + VT_DTF_GAP, canRotate: d.rotacion, label: d.nombre, designIdx: d.idx});
         });
         pieces.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
 
         const {placements, totalLength} = vtDTFPack(pieces, VT_DTF_ANCHO);
-        const largoCm     = Math.max(totalLength, VT_DTF_MIN_LARGO);
-        const costoMat    = (largoCm / 100) * VT_DTF_PRECIO;
-        const areaTotal   = designs.reduce((s, d) => s + d.base * d.altura * d.cantidad, 0);
-        const eficiencia  = totalLength > 0 ? areaTotal / (VT_DTF_ANCHO * totalLength) * 100 : 0;
+        const largoCm    = Math.max(totalLength, VT_DTF_MIN_LARGO);
+        const costoMat   = (largoCm / 100) * VT_DTF_PRECIO;
+        const areaTotal  = designs.reduce((s, d) => s + d.base * d.altura * globalCantidad, 0);
+        const eficiencia = totalLength > 0 ? areaTotal / (VT_DTF_ANCHO * totalLength) * 100 : 0;
 
-        // Bajadas: 2 por impresión, continuas (no se reinician)
-        const totalBajadas = designs.length * VT_DTF_BAJADAS_X_IMP;
-        const costoBajadas = totalBajadas > 0 ? VT_DTF_BAJADA_1A + (totalBajadas - 1) * VT_DTF_BAJADA_N : 0;
+        // Bajadas: cada PIEZA impresa consume 2 bajadas (diseños × playeras × 2)
+        const totalBajadas  = designs.length * globalCantidad * VT_DTF_BAJADAS_X_IMP;
+        const costoBajadas  = totalBajadas > 0 ? VT_DTF_BAJADA_1A + (totalBajadas - 1) * VT_DTF_BAJADA_N : 0;
 
-        const adaptativo     = document.getElementById("vt-adaptativo").checked;
+        const adaptativo      = document.getElementById("vt-adaptativo").checked;
         const costoAdaptativo = adaptativo ? VT_DTF_ADAPTATIVO : 0;
+        const costoPlayeras   = precioPrenda * globalCantidad;
 
-        // Asignar área proporcional y subtotal por impresión
+        // Área proporcional por diseño para mostrar en el item
         designs.forEach(d => {
-            const area  = d.base * d.altura * d.cantidad;
-            const frac  = areaTotal > 0 ? area / areaTotal : 0;
-            d.area      = area;
-            d.matCosto  = frac * costoMat;
-            d.precioUnit= d.cantidad > 0 ? d.matCosto / d.cantidad : 0;
-            d.bajadas   = VT_DTF_BAJADAS_X_IMP;
-            d.subtotal  = d.matCosto; // las bajadas y adaptativo van a totales globales
+            d.areaUnitaria = d.base * d.altura;
+            d.areaTotal    = d.areaUnitaria * globalCantidad;
+            const frac     = areaTotal > 0 ? d.areaTotal / areaTotal : 0;
+            d.matCosto     = frac * costoMat;
+            d.precioUnit   = d.matCosto / globalCantidad;
         });
 
-        const totalPedido = costoMat + costoBajadas + costoAdaptativo;
+        const totalPedido = costoPlayeras + costoMat + costoBajadas + costoAdaptativo;
 
         document._vtResult = {
             tecnica: "dtf",
-            designs,
-            placements,
-            totalLength,
-            largoCm,
-            costoMat,
-            costoBajadas,
-            totalBajadas,
-            adaptativo,
-            costoAdaptativo,
-            totalPedido,
-            eficiencia,
-            areaTotal,
-            ancho: VT_DTF_ANCHO
+            designs, placements, totalLength, largoCm, costoMat,
+            costoBajadas, totalBajadas, adaptativo, costoAdaptativo,
+            costoPlayeras, precioPrenda, nombrePrenda, globalCantidad,
+            totalPedido, eficiencia, areaTotal, ancho: VT_DTF_ANCHO
         };
 
         const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -1996,13 +1998,14 @@
             if (!item._vt) return;
             const d = item._vt;
             item.querySelector(".dtf-calculo").innerHTML =
-                `Área ${d.area.toFixed(2)} cm² · <strong>$${fmt(d.precioUnit)} c/u</strong>` +
-                ` · ${d.bajadas} bajadas · subtotal material <strong style="color:#0055cc">$${fmt(d.matCosto)}</strong>`;
+                `${d.areaUnitaria.toFixed(2)} cm² × ${globalCantidad} = ${d.areaTotal.toFixed(2)} cm² · ` +
+                `<strong>$${fmt(d.precioUnit)} c/u</strong> · ` +
+                `material <strong style="color:#0055cc">$${fmt(d.matCosto)}</strong>`;
         });
 
         document.getElementById("resultado").innerHTML =
-            `<div>${largoCm.toFixed(1)} cm lineales · ${totalBajadas} bajadas` +
-            (adaptativo ? ` · adaptativo $${fmt(costoAdaptativo)}` : "") +
+            `<div>${largoCm.toFixed(1)} cm · ${totalBajadas} bajadas ($${fmt(costoBajadas)})` +
+            (adaptativo ? ` · adapt. $${fmt(costoAdaptativo)}` : "") +
             ` · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
     }
 
@@ -2094,39 +2097,45 @@
                     ? `<img src="${d.imgSrc}" style="width:54px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
                     : `<div style="width:54px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
                 filas += `<tr>
-                  <td>
+                  <td colspan="2">
                     <div style="display:flex;align-items:center;gap:10px">
                       ${imgCell}
                       <div>
                         <strong>${d.nombre}</strong>
-                        <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} (${d.base}×${d.altura} cm)</div>
+                        <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} — ${d.areaUnitaria.toFixed(2)} cm² × ${r.globalCantidad} pzas.</div>
                       </div>
                     </div>
                   </td>
-                  <td style="text-align:center;vertical-align:middle">${d.cantidad}</td>
-                  <td style="text-align:right;vertical-align:middle">${d.area.toFixed(2)} cm²</td>
-                  <td style="text-align:center;vertical-align:middle">${d.bajadas}</td>
+                  <td style="text-align:right;vertical-align:middle;font-size:12px;color:#888">${d.areaTotal.toFixed(2)} cm²</td>
+                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
                   <td style="text-align:right;vertical-align:middle"><strong>$${fmt(d.matCosto)}</strong></td>
                 </tr>`;
             });
 
-            return `
+            const playeraFila = r.precioPrenda > 0
+            ? `<tr><td colspan="3"><strong>${r.nombrePrenda}</strong></td><td style="text-align:center">${r.globalCantidad}</td><td style="text-align:right">$${fmt(r.costoPlayeras)}</td></tr>`
+            : "";
+
+        return `
   <div style="padding:24px 32px 0">
     <table>
       <thead><tr>
-        <th>Impresión</th>
+        <th>Concepto</th>
+        <th></th>
+        <th></th>
         <th style="text-align:center">Cant.</th>
-        <th style="text-align:right">Área</th>
-        <th style="text-align:center">Bajadas</th>
-        <th style="text-align:right">Material</th>
+        <th style="text-align:right">Subtotal</th>
       </tr></thead>
-      <tbody>${filas}</tbody>
+      <tbody>
+        ${playeraFila}
+        ${filas}
+      </tbody>
     </table>
     <div class="sep"></div>
   </div>
   <div class="totales">
-    <div class="t-row"><span>Largo de tira (${r.ancho} cm)</span><span>${r.largoCm.toFixed(1)} cm</span></div>
-    <div class="t-row"><span>Material DTF</span><span>$${fmt(r.costoMat)}</span></div>
+    ${r.precioPrenda > 0 ? `<div class="t-row"><span>Playeras (${r.globalCantidad} × $${fmt(r.precioPrenda)})</span><span>$${fmt(r.costoPlayeras)}</span></div>` : ""}
+    <div class="t-row"><span>Material DTF — ${r.largoCm.toFixed(1)} cm de tira</span><span>$${fmt(r.costoMat)}</span></div>
     <div class="t-row"><span>Bajadas de plancha (${r.totalBajadas})</span><span>$${fmt(r.costoBajadas)}</span></div>
     ${r.adaptativo ? `<div class="t-row"><span>Diseño adaptativo</span><span>$${fmt(r.costoAdaptativo)}</span></div>` : ""}
     <div class="t-row main"><span>TOTAL</span><span>$${fmt(r.totalPedido)}</span></div>
