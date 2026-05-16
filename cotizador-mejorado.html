@@ -2089,55 +2089,69 @@
         if (!r) return "<div style='padding:32px'>Sin datos. Calcula el pedido primero.</div>";
 
         if (r.tecnica === "dtf") {
+            // Distribuir costo de bajadas proporcionalmente entre diseños
+            const bajadaXDiseno = r.designs.length > 0 ? r.costoBajadas / r.designs.length : 0;
+
             let filas = "";
+
+            // Fila de playeras (si hay modelo seleccionado con precio)
+            if (r.precioPrenda > 0) {
+                filas += `<tr>
+                  <td><strong>${r.nombrePrenda}</strong><div style="font-size:11px;color:#888;margin-top:2px">Playera</div></td>
+                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(r.precioPrenda)}</td>
+                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(r.costoPlayeras)}</strong></td>
+                </tr>`;
+            }
+
+            // Filas de impresiones DTF (precio unitario = material + bajadas del diseño, por playera)
             r.designs.forEach(d => {
                 const tam = VT_TAMAÑOS[d.tamanoKey];
                 const ar = `${d.base}/${d.altura}`;
                 const imgCell = d.imgSrc
                     ? `<img src="${d.imgSrc}" style="width:54px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
                     : `<div style="width:54px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
+                const costoDeseno = d.matCosto + bajadaXDiseno;
+                const unitDeseno  = costoDeseno / r.globalCantidad;
                 filas += `<tr>
-                  <td colspan="2">
+                  <td>
                     <div style="display:flex;align-items:center;gap:10px">
                       ${imgCell}
                       <div>
                         <strong>${d.nombre}</strong>
-                        <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} — ${d.areaUnitaria.toFixed(2)} cm² × ${r.globalCantidad} pzas.</div>
+                        <div style="font-size:11px;color:#888;margin-top:2px">DTF · ${tam.nombre}</div>
                       </div>
                     </div>
                   </td>
-                  <td style="text-align:right;vertical-align:middle;font-size:12px;color:#888">${d.areaTotal.toFixed(2)} cm²</td>
                   <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
-                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(d.matCosto)}</strong></td>
+                  <td style="text-align:right;vertical-align:middle">$${fmt(unitDeseno)}</td>
+                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(costoDeseno)}</strong></td>
                 </tr>`;
             });
 
-            const playeraFila = r.precioPrenda > 0
-            ? `<tr><td colspan="3"><strong>${r.nombrePrenda}</strong></td><td style="text-align:center">${r.globalCantidad}</td><td style="text-align:right">$${fmt(r.costoPlayeras)}</td></tr>`
-            : "";
+            // Diseño adaptativo como línea separada
+            if (r.adaptativo) {
+                filas += `<tr>
+                  <td colspan="2"><strong>Diseño adaptativo</strong></td>
+                  <td></td>
+                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(r.costoAdaptativo)}</strong></td>
+                </tr>`;
+            }
 
         return `
   <div style="padding:24px 32px 0">
     <table>
       <thead><tr>
-        <th>Concepto</th>
-        <th></th>
-        <th></th>
+        <th>Artículo</th>
         <th style="text-align:center">Cant.</th>
+        <th style="text-align:right">P. Unitario</th>
         <th style="text-align:right">Subtotal</th>
       </tr></thead>
-      <tbody>
-        ${playeraFila}
-        ${filas}
-      </tbody>
+      <tbody>${filas}</tbody>
     </table>
     <div class="sep"></div>
   </div>
   <div class="totales">
-    ${r.precioPrenda > 0 ? `<div class="t-row"><span>Playeras (${r.globalCantidad} × $${fmt(r.precioPrenda)})</span><span>$${fmt(r.costoPlayeras)}</span></div>` : ""}
-    <div class="t-row"><span>Material DTF — ${r.largoCm.toFixed(1)} cm de tira</span><span>$${fmt(r.costoMat)}</span></div>
-    <div class="t-row"><span>Bajadas de plancha (${r.totalBajadas})</span><span>$${fmt(r.costoBajadas)}</span></div>
-    ${r.adaptativo ? `<div class="t-row"><span>Diseño adaptativo</span><span>$${fmt(r.costoAdaptativo)}</span></div>` : ""}
     <div class="t-row main"><span>TOTAL</span><span>$${fmt(r.totalPedido)}</span></div>
   </div>`;
         }
