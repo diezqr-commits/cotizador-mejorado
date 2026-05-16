@@ -1089,6 +1089,11 @@
     cargarListaClientes();
     document.getElementById("cliente").addEventListener("focus", cargarListaClientes);
 
+    // ── ABRIR ORDEN DE TRABAJO ──
+    function abrirOrdenDeTrabajo() {
+        window.open('orden-trabajo-playera.html', '_blank');
+    }
+
     // ── GENERAR COTIZACIÓN ──
     function generarCotizacion() {
         const cliente = document.getElementById("cliente").value.trim() || "Sin nombre";
@@ -1096,6 +1101,11 @@
         const folio   = String(Date.now()).slice(-6);
         const fecha   = new Date().toLocaleDateString("es-MX", {day:"2-digit", month:"long", year:"numeric"});
         const fmt     = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        // Guardar datos para autofill en orden de trabajo
+        try {
+            localStorage.setItem('diez_ultima_cotizacion', JSON.stringify({ folio, cliente, metodo }));
+        } catch(e) {}
 
         let bodyHTML = "";
 
@@ -1191,6 +1201,9 @@
   <div class="no-print" style="text-align:center;padding:18px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
     <button onclick="window.print()" style="background:#111;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
       Imprimir / Guardar PDF
+    </button>
+    <button onclick="window.opener && window.opener.abrirOrdenDeTrabajo ? window.opener.abrirOrdenDeTrabajo() : window.open('orden-trabajo-playera.html','_blank')" style="background:#1a7a1a;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
+      Generar orden de trabajo
     </button>
     ${metodo === "dtfuv" ? `<a id="btn-svg" href="${generarSVGDataURI()}" download="distribucion-dtf.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}
     ${(metodo === "viniltf" && vtTecnica === "dtf") ? `<a id="btn-svg-vt" href="${generarSVGDataURIVT()}" download="distribucion-dtf-textil.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}

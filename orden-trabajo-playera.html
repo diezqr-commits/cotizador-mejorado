@@ -132,9 +132,9 @@
     .upload-hint .icon { font-size: 24px; margin-bottom: 4px; }
     .upload-hint p { font-size: 11px; line-height: 1.5; }
 
-    #previewContainer { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
-    .preview-wrap { position: relative; }
-    .preview-img { max-height: 116px; max-width: 170px; border-radius: 4px; object-fit: contain; display: block; }
+    #previewContainer { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; width: 100%; }
+    .preview-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    .preview-img { border-radius: 4px; object-fit: contain; display: block; max-width: 100%; }
     .btn-remove-img {
       position: absolute; top: -5px; right: -5px;
       background: #e63946; color: white; border: none; border-radius: 50%;
@@ -435,7 +435,13 @@
         dirHandle = await window.showDirectoryPicker();
         mostrarNombreRuta(dirHandle.name);
       } catch(e) {
-        if (e.name !== 'AbortError') console.warn('showDirectoryPicker:', e);
+        if (e.name === 'AbortError') return; // usuario canceló
+        // FSA falló (iframe, sin HTTPS, permisos) → degradar a input
+        dirHandle = null;
+        document.getElementById('rutaBtn').style.display = 'none';
+        const fb = document.getElementById('rutaFallback');
+        fb.style.display = 'inline-block';
+        fb.focus();
       }
     }
 
@@ -483,6 +489,9 @@
       initRuta();
       intentarAutofill();
       document.addEventListener('paste', manejarPegado);
+      if (window.ResizeObserver) {
+        new ResizeObserver(ajustarAlturaImagenes).observe(document.getElementById('uploadArea'));
+      }
 
       // Checkboxes exclusivos por grupo
       document.querySelectorAll('input[name="custom"], input[name="tinta"]').forEach(cb => {
@@ -626,10 +635,20 @@
         e.stopPropagation(); wrap.remove();
         if (!container.children.length)
           document.getElementById('uploadHint').style.display = 'block';
+        ajustarAlturaImagenes();
       };
 
       wrap.appendChild(img); wrap.appendChild(btn);
       container.appendChild(wrap);
+      ajustarAlturaImagenes();
+    }
+
+    function ajustarAlturaImagenes() {
+      const area = document.getElementById('uploadArea');
+      const imgs = document.querySelectorAll('.preview-img');
+      if (!imgs.length) return;
+      const h = Math.max(60, area.offsetHeight - 24);
+      imgs.forEach(img => { img.style.maxHeight = h + 'px'; });
     }
 
     /* ── PEGAR PORTAPAPELES ── */
