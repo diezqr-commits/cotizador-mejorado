@@ -1709,8 +1709,8 @@
     const VT_VINIL_SEP        = 0.8;    // cm separación entre cortes
     const VT_VINIL_MAX_LARGO  = 300;    // cm máximo continuo por corte
 
-    // ── TABLA DE CORTE (die-cutting), TOTAL POR BATCH SEGÚN CANTIDAD ──
-    // Índice = cantidad (1..10+). cant>=10 usa el valor en [10].
+    // ── TABLA DE CORTE (die-cutting), PRECIO POR PIEZA SEGÚN VOLUMEN ──
+    // Índice = cantidad (1..10+). cant>=10 usa el valor en [10]. Se multiplica por cantidad.
     const VT_CORTE_TABLA = {
         "1/4":   [0, 55, 50,    45,    40,    35,    30,    25,    20,    15,    10],
         "1/2":   [0, 66, 60.33, 54.67, 49,    43.33, 37.67, 32,    26.33, 20.67, 15],
@@ -2103,7 +2103,7 @@
             d.largoCm   = info.largoTotalCm;
             d.cortes    = info.cortes;
             d.matCosto  = (info.largoTotalCm / 100) * VT_VINIL_PRECIO;
-            d.corteCosto = vtPrecioCorte(d.tamanoKey, globalCantidad);
+            d.corteCosto = vtPrecioCorte(d.tamanoKey, globalCantidad) * globalCantidad;
             const depUnit = vtDepilacionUnit(d.depilacion, d.tamanoKey);
             d.depUnit    = depUnit;
             d.depCosto   = depUnit * globalCantidad;
