@@ -296,7 +296,31 @@
         .dtf-pegar-btn:hover { background: #dce8ff; }
         .dtf-calculo { margin-top: 8px; }
 
+        /* ── VINIL / DTF TEXTIL ── */
+        .vt-tab {
+            padding: 7px 18px;
+            border-radius: 6px;
+            background: #f0f4ff;
+            cursor: pointer;
+            border: 1px solid #c8d8ff;
+            font-size: 13px;
+            font-weight: 500;
+            color: #5577bb;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .vt-tab:hover { border-color: #007bff; color: #007bff; }
+        .vt-tab.active { background: #007bff; color: white; border-color: #007bff; }
+
+        .vt-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .vt-grid-3 .form-group { margin-bottom: 0; }
+
         @media (max-width: 600px) {
+            .vt-grid-3 { grid-template-columns: 1fr; }
             body { padding: 10px; }
             .item-grid { grid-template-columns: 1fr; }
             .tabs { flex-direction: column; }
@@ -317,6 +341,7 @@
         <div class="tab" data-metodo="bordado">Bordado</div>
         <div class="tab" data-metodo="promocionales">Promocionales</div>
         <div class="tab" data-metodo="dtfuv">DTF UV</div>
+        <div class="tab" data-metodo="viniltf">Vinil / DTF</div>
     </div>
 
     <!-- DATOS -->
@@ -347,6 +372,19 @@
             <div class="error" id="error-cantidad"></div>
         </div>
 
+    </div>
+
+    <!-- VINIL / DTF: Selector de técnica + diseño adaptativo -->
+    <div class="box" id="vt-tecnica-box" style="display:none">
+        <h3 style="margin-bottom:10px">Técnica</h3>
+        <div class="tipo-prenda-row" style="margin-bottom:14px">
+            <div class="vt-tab active" data-tecnica="dtf">DTF (Direct-to-Film)</div>
+            <div class="vt-tab" data-tecnica="vinil">Vinil de corte</div>
+        </div>
+        <label class="check-label" id="vt-adaptativo-row">
+            <input type="checkbox" id="vt-adaptativo">
+            Diseño adaptativo (+$150 al pedido, una sola vez)
+        </label>
     </div>
 
     <!-- IMPRESIONES / BORDADOS / PROMOCIONALES -->
@@ -380,6 +418,7 @@
     // ── ESTADO ──
     let metodo = "estandar";
     let tipoPrenda = "blanco";
+    let vtTecnica = "dtf"; // "dtf" | "vinil" — submétodo del módulo viniltf
 
     // ── CACHÉ DE IMÁGENES (base64 para cotización en blob URL) ──
     const imgCache = {};
@@ -573,18 +612,30 @@
         const esPromo   = metodo === "promocionales";
         const esBordado = metodo === "bordado";
         const esDTF     = metodo === "dtfuv";
+        const esVT      = metodo === "viniltf";
 
         // Mostrar u ocultar campos del box de datos
         document.getElementById("tipo-prenda-group").style.display = esBordado ? "block" : "none";
-        document.getElementById("playera-group").style.display     = (esPromo || esDTF) ? "none" : "block";
-        document.getElementById("cantidad-group").style.display    = (esPromo || esDTF) ? "none" : "block";
+        document.getElementById("playera-group").style.display     = (esPromo || esDTF || esVT) ? "none" : "block";
+        document.getElementById("cantidad-group").style.display    = (esPromo || esDTF || esVT) ? "none" : "block";
 
         // Ponchado solo en bordado
         document.getElementById("ponchado-box").style.display = esBordado ? "block" : "none";
 
+        // Selector de técnica vinil/dtf solo en viniltf
+        document.getElementById("vt-tecnica-box").style.display = esVT ? "block" : "none";
+
+        // Resetear técnica vinil/dtf y checkbox adaptativo al cambiar de método
+        vtTecnica = "dtf";
+        document.querySelectorAll(".vt-tab").forEach(t => {
+            t.classList.toggle("active", t.dataset.tecnica === "dtf");
+        });
+        document.getElementById("vt-adaptativo").checked = false;
+        document.getElementById("vt-adaptativo-row").style.display = "flex";
+
         // Título y botón del box de items
-        const titulos   = {estandar:"Impresiones", presecada:"Impresiones", bordado:"Bordados", promocionales:"Promocionales", dtfuv:"Diseños DTF UV"};
-        const btnTextos = {estandar:"+ Agregar impresión", presecada:"+ Agregar impresión", bordado:"+ Agregar bordado", promocionales:"+ Agregar artículo", dtfuv:"+ Agregar diseño"};
+        const titulos   = {estandar:"Impresiones", presecada:"Impresiones", bordado:"Bordados", promocionales:"Promocionales", dtfuv:"Diseños DTF UV", viniltf:"Impresiones DTF"};
+        const btnTextos = {estandar:"+ Agregar impresión", presecada:"+ Agregar impresión", bordado:"+ Agregar bordado", promocionales:"+ Agregar artículo", dtfuv:"+ Agregar diseño", viniltf:"+ Agregar impresión DTF"};
         document.getElementById("titulo-items").textContent = titulos[metodo];
         document.getElementById("agregar-btn").textContent  = btnTextos[metodo];
 
@@ -605,6 +656,19 @@
         // Resultado inicial
         document.getElementById("resultado").textContent = "Total: $0.00";
         document.getElementById("error-cantidad").textContent = "";
+    }
+
+    // ── ACTUALIZAR UI VINIL/DTF AL CAMBIAR TÉCNICA ──
+    function actualizarUIVT() {
+        const esDTF = vtTecnica === "dtf";
+        document.getElementById("titulo-items").textContent = esDTF ? "Impresiones DTF" : "Impresiones Vinil";
+        document.getElementById("agregar-btn").textContent  = esDTF ? "+ Agregar impresión DTF" : "+ Agregar impresión vinil";
+        // Diseño adaptativo solo aplica para DTF
+        document.getElementById("vt-adaptativo-row").style.display = esDTF ? "flex" : "none";
+        if (!esDTF) document.getElementById("vt-adaptativo").checked = false;
+        // Limpiar items al cambiar técnica (cada técnica tiene campos distintos)
+        document.getElementById("items").innerHTML = "";
+        document.getElementById("resultado").textContent = "Total: $0.00";
     }
 
     // ── AGREGAR IMPRESIÓN (serigrafía) ──
@@ -834,6 +898,7 @@
     function calcular() {
         if (metodo === "promocionales") { calcularPromocionales(); return; }
         if (metodo === "dtfuv")         { calcularDTF();           return; }
+        if (metodo === "viniltf")       { calcularVT();            return; }
 
         const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
         const errorDiv = document.getElementById("error-cantidad");
@@ -955,8 +1020,21 @@
         if (metodo === "bordado")            agregarBordado();
         else if (metodo === "promocionales") agregarPromocional();
         else if (metodo === "dtfuv")         agregarDiseñoDTF();
+        else if (metodo === "viniltf")       (vtTecnica === "dtf" ? agregarItemVT_DTF() : agregarItemVT_Vinil());
         else                                 agregarImpresion();
     });
+
+    // Listeners de los tabs de técnica vinil/dtf
+    document.querySelectorAll(".vt-tab").forEach(tab => {
+        tab.addEventListener("click", function() {
+            document.querySelectorAll(".vt-tab").forEach(t => t.classList.remove("active"));
+            this.classList.add("active");
+            vtTecnica = this.dataset.tecnica;
+            actualizarUIVT();
+        });
+    });
+
+    document.getElementById("vt-adaptativo").addEventListener("change", calcular);
 
     document.getElementById("ponchado-check").addEventListener("change", function() {
         document.getElementById("ponchado-detalle").style.display = this.checked ? "flex" : "none";
@@ -980,11 +1058,13 @@
             bodyHTML = generarBodyPromo(fmt);
         } else if (metodo === "dtfuv") {
             bodyHTML = generarBodyDTF(fmt);
+        } else if (metodo === "viniltf") {
+            bodyHTML = generarBodyVT(fmt);
         } else {
             bodyHTML = generarBodySeri(fmt);
         }
 
-        const metodoNombre = {estandar:"Serigrafía estándar", presecada:"Serigrafía presecada", bordado:"Bordado", promocionales:"Promocionales", dtfuv:"DTF UV"}[metodo];
+        const metodoNombre = {estandar:"Serigrafía estándar", presecada:"Serigrafía presecada", bordado:"Bordado", promocionales:"Promocionales", dtfuv:"DTF UV", viniltf:"Vinil / DTF"}[metodo];
 
         const html = `<!DOCTYPE html>
 <html lang="es">
@@ -1061,6 +1141,7 @@
       Imprimir / Guardar PDF
     </button>
     ${metodo === "dtfuv" ? `<a id="btn-svg" href="${generarSVGDataURI()}" download="distribucion-dtf.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}
+    ${(metodo === "viniltf" && vtTecnica === "dtf") ? `<a id="btn-svg-vt" href="${generarSVGDataURIVT()}" download="distribucion-dtf-textil.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}
   </div>
 </div>
 </body>
@@ -1546,6 +1627,616 @@
         const a=document.createElement("a");
         a.href=url; a.download="distribucion-dtf.svg"; a.click();
         URL.revokeObjectURL(url);
+    }
+
+    // ══════════════════════════════════════
+    // ── VINIL / DTF TEXTIL ──
+    // ══════════════════════════════════════
+
+    // Tamaños fijos (base × altura en cm)
+    const VT_TAMAÑOS = {
+        "1/4":   {nombre: "1/4 carta", base: 13.97, altura: 10.8},
+        "1/2":   {nombre: "1/2 carta", base: 21.59, altura: 13.97},
+        "carta": {nombre: "Carta",     base: 21.59, altura: 27.94}
+    };
+
+    // ── PARÁMETROS DTF ──
+    const VT_DTF_ANCHO        = 58;     // cm
+    const VT_DTF_PRECIO       = 600;    // $/m
+    const VT_DTF_GAP          = 0.3;    // cm entre piezas
+    const VT_DTF_MIN_LARGO    = 10;     // cm mínimo facturable
+    const VT_DTF_BAJADA_1A    = 25;     // $ primera bajada del pedido
+    const VT_DTF_BAJADA_N     = 15;     // $ bajadas subsecuentes
+    const VT_DTF_BAJADAS_X_IMP= 2;      // bajadas por impresión DTF
+    const VT_DTF_ADAPTATIVO   = 150;    // $ por pedido, una sola vez
+
+    // ── PARÁMETROS VINIL ──
+    const VT_VINIL_ANCHO      = 25;     // cm (tira)
+    const VT_VINIL_PRECIO     = 165;    // $/m
+    const VT_VINIL_MARGEN     = 1.5;    // cm arriba y abajo
+    const VT_VINIL_SEP        = 0.8;    // cm separación entre cortes
+    const VT_VINIL_MAX_LARGO  = 300;    // cm máximo continuo por corte
+
+    // ── TABLA DE CORTE (die-cutting), TOTAL POR BATCH SEGÚN CANTIDAD ──
+    // Índice = cantidad (1..10+). cant>=10 usa el valor en [10].
+    const VT_CORTE_TABLA = {
+        "1/4":   [0, 55, 50,    45,    40,    35,    30,    25,    20,    15,    10],
+        "1/2":   [0, 66, 60.33, 54.67, 49,    43.33, 37.67, 32,    26.33, 20.67, 15],
+        "carta": [0, 72, 66.08, 60.17, 54.25, 48.33, 42.42, 36.50, 30.58, 24.67, 18.75]
+    };
+
+    // ── TABLA DE DEPILACIÓN (por playera) ──
+    const VT_DEPILACION = {
+        "simple":   {"1/4": 6,  "1/2": 10, "carta": 15},
+        "compleja": {"1/4": 10, "1/2": 18, "carta": 25}
+    };
+
+    const VT_COLORES = DTF_COLORES; // reutilizar paleta del módulo DTF UV
+
+    function vtPrecioCorte(tamano, cantidad) {
+        const tabla = VT_CORTE_TABLA[tamano];
+        if (!tabla || cantidad < 1) return 0;
+        return cantidad >= 10 ? tabla[10] : tabla[cantidad];
+    }
+
+    function vtDepilacionUnit(tipo, tamano) {
+        if (!VT_DEPILACION[tipo]) return 0;
+        return VT_DEPILACION[tipo][tamano] || 0;
+    }
+
+    // Helper: agrega componente de upload + paste de imagen idéntico a promocionales
+    function vtAgregarImagenUpload(div, onUpdateImage) {
+        const fileInput   = div.querySelector(".promo-file");
+        const preview     = div.querySelector(".promo-preview");
+        const placeholder = div.querySelector(".promo-placeholder");
+        const imgLabel    = div.querySelector(".dtf-img-label");
+
+        function cargarImagen(file) {
+            if (!file || !file.type.startsWith("image/")) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.style.display = "block";
+                placeholder.style.display = "none";
+                if (onUpdateImage) onUpdateImage();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener("change", function() { cargarImagen(this.files[0]); });
+        imgLabel.addEventListener("dragover",  e => { e.preventDefault(); imgLabel.style.borderColor="#007bff"; imgLabel.style.background="#e8f0fe"; });
+        imgLabel.addEventListener("dragleave", () => { imgLabel.style.borderColor=""; imgLabel.style.background=""; });
+        imgLabel.addEventListener("drop", e => { e.preventDefault(); imgLabel.style.borderColor=""; imgLabel.style.background=""; cargarImagen(e.dataTransfer.files[0]); });
+
+        const pasteBtn    = div.querySelector(".dtf-pegar-btn");
+        const pasteTarget = div.querySelector(".promo-paste-target");
+        pasteBtn.addEventListener("click", () => { pasteTarget.focus(); pasteBtn.textContent="Ctrl+V para pegar..."; pasteBtn.style.background="#dce8ff"; });
+        pasteTarget.addEventListener("blur", () => { pasteBtn.textContent="Pegar imagen"; pasteBtn.style.background=""; });
+        pasteTarget.addEventListener("paste", e => {
+            e.preventDefault();
+            const items = Array.from(e.clipboardData.items);
+            const img = items.find(i => i.type.startsWith("image/"));
+            if (img) { cargarImagen(img.getAsFile()); pasteTarget.blur(); return; }
+            const url = e.clipboardData.getData("text/plain").trim();
+            if (url.startsWith("http")) { preview.src=url; preview.style.display="block"; placeholder.style.display="none"; if (onUpdateImage) onUpdateImage(); }
+            pasteTarget.blur();
+        });
+    }
+
+    // Actualiza aspect-ratio del placeholder según tamaño
+    function vtActualizarAR(div) {
+        const tam = VT_TAMAÑOS[div.querySelector(".vt-tamano").value];
+        if (!tam) return;
+        const preview = div.querySelector(".promo-preview");
+        const imgLabel = div.querySelector(".dtf-img-label");
+        if (preview.style.display === "none") imgLabel.style.aspectRatio = `${tam.base} / ${tam.altura}`;
+    }
+
+    // ── AGREGAR IMPRESIÓN DTF (módulo viniltf) ──
+    function agregarItemVT_DTF() {
+        const div = document.createElement("div");
+        div.className = "item vt-item vt-dtf-item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Impresión DTF</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div class="dtf-layout">
+                <div class="dtf-img-col">
+                    <label class="dtf-img-label">
+                        <input type="file" accept="image/*" class="promo-file">
+                        <img class="promo-preview" src="" style="display:none" alt="">
+                        <span class="promo-placeholder">+ Foto</span>
+                    </label>
+                    <button type="button" class="dtf-pegar-btn">Pegar imagen</button>
+                    <div class="promo-paste-target" contenteditable="true" style="position:fixed;opacity:0;width:1px;height:1px;overflow:hidden;top:-9999px"></div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Nombre de la impresión</label>
+                        <input type="text" class="vt-nombre" placeholder="Ej: Frente, Espalda, Logo...">
+                    </div>
+                    <div class="item-grid">
+                        <div class="form-group">
+                            <label>Tamaño</label>
+                            <select class="vt-tamano">
+                                <option value="1/4">1/4 carta (13.97×10.8 cm)</option>
+                                <option value="1/2">1/2 carta (21.59×13.97 cm)</option>
+                                <option value="carta">Carta (21.59×27.94 cm)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad de playeras</label>
+                            <input type="number" class="vt-cantidad" value="1" min="1">
+                        </div>
+                    </div>
+                    <label class="check-label" style="font-weight:400;margin-top:8px">
+                        <input type="checkbox" class="vt-rotacion" checked>
+                        Permitir rotación al acomodar
+                    </label>
+                    <div class="vt-error" style="color:#ff4d4d;font-size:12px;margin-top:4px;display:none"></div>
+                    <div class="promo-calculo dtf-calculo">Subtotal aparecerá tras calcular</div>
+                </div>
+            </div>
+        `;
+
+        vtAgregarImagenUpload(div, () => vtActualizarAR(div));
+        vtActualizarAR(div);
+
+        div.querySelector(".vt-tamano").addEventListener("change", () => { vtActualizarAR(div); calcular(); });
+        div.querySelector(".vt-cantidad").addEventListener("input", calcular);
+        div.querySelector(".vt-rotacion").addEventListener("change", calcular);
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── AGREGAR IMPRESIÓN VINIL ──
+    function agregarItemVT_Vinil() {
+        const div = document.createElement("div");
+        div.className = "item vt-item vt-vinil-item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Impresión Vinil</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div class="dtf-layout">
+                <div class="dtf-img-col">
+                    <label class="dtf-img-label">
+                        <input type="file" accept="image/*" class="promo-file">
+                        <img class="promo-preview" src="" style="display:none" alt="">
+                        <span class="promo-placeholder">+ Foto</span>
+                    </label>
+                    <button type="button" class="dtf-pegar-btn">Pegar imagen</button>
+                    <div class="promo-paste-target" contenteditable="true" style="position:fixed;opacity:0;width:1px;height:1px;overflow:hidden;top:-9999px"></div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Nombre de la impresión</label>
+                        <input type="text" class="vt-nombre" placeholder="Ej: Logo">
+                    </div>
+                    <div class="vt-grid-3">
+                        <div class="form-group">
+                            <label>Tamaño</label>
+                            <select class="vt-tamano">
+                                <option value="1/4">1/4 carta</option>
+                                <option value="1/2">1/2 carta</option>
+                                <option value="carta">Carta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad playeras</label>
+                            <input type="number" class="vt-cantidad" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Depilación</label>
+                            <select class="vt-depilacion">
+                                <option value="simple">Simple</option>
+                                <option value="compleja">Compleja</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="vt-error" style="color:#ff4d4d;font-size:12px;margin-top:4px;display:none"></div>
+                    <div class="promo-calculo dtf-calculo">Subtotal aparecerá tras calcular</div>
+                </div>
+            </div>
+        `;
+
+        vtAgregarImagenUpload(div, () => vtActualizarAR(div));
+        vtActualizarAR(div);
+
+        div.querySelector(".vt-tamano").addEventListener("change", () => { vtActualizarAR(div); calcular(); });
+        div.querySelector(".vt-cantidad").addEventListener("input", calcular);
+        div.querySelector(".vt-depilacion").addEventListener("change", calcular);
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── PACK DTF (variante con ancho parametrizado) ──
+    function vtDTFPack(pieces, ancho) {
+        const sky=[{x1:0, x2:ancho, y:0}];
+        const pl=[];
+        for (const p of pieces) {
+            let best=null, bY=Infinity, bX=Infinity;
+            const oris=[{w:p.w,h:p.h}];
+            if (p.canRotate && Math.abs(p.w-p.h)>0.001) oris.push({w:p.h,h:p.w});
+            for (const o of oris) {
+                if (o.w > ancho+0.001) continue;
+                for (const seg of sky) {
+                    const x=seg.x1;
+                    if (x+o.w > ancho+0.001) continue;
+                    const y=dtfMaxH(sky,x,x+o.w);
+                    if (y<bY||(y===bY&&x<bX)) { bY=y; bX=x; best={x,y,w:o.w,h:o.h,label:p.label,designIdx:p.designIdx}; }
+                }
+            }
+            if (best) { pl.push(best); dtfUpdateSky(sky,best.x,best.x+best.w,best.y+best.h); }
+        }
+        const totalLength=sky.reduce((m,s)=>Math.max(m,s.y),0);
+        return {placements:pl, totalLength};
+    }
+
+    // ── COMPUTA LARGO VINIL CON MULTI-CUT ──
+    // Apila N piezas de altura h en tiras de 25 cm × max 300 cm.
+    // Devuelve { largoTotalCm, cortes, piezasPorCorte }.
+    function vtComputarVinilLargo(altura, cantidad) {
+        if (cantidad < 1) return {largoTotalCm: 0, cortes: 0, piezasPorCorte: 0};
+        // Largo de un corte con K piezas: 1.5 + K*h + (K-1)*0.8 + 1.5 = 3 + K*h + (K-1)*0.8
+        // Buscar máximo K tal que largo <= 300
+        const maxK = Math.max(1, Math.floor((VT_VINIL_MAX_LARGO - 2*VT_VINIL_MARGEN + VT_VINIL_SEP) / (altura + VT_VINIL_SEP)));
+        const piezasPorCorte = Math.min(maxK, cantidad);
+        const cortes = Math.ceil(cantidad / piezasPorCorte);
+        let largoTotal = 0;
+        let restantes = cantidad;
+        for (let i = 0; i < cortes; i++) {
+            const k = Math.min(piezasPorCorte, restantes);
+            const largoCorte = 2*VT_VINIL_MARGEN + k*altura + (k-1)*VT_VINIL_SEP;
+            largoTotal += largoCorte;
+            restantes -= k;
+        }
+        return {largoTotalCm: largoTotal, cortes, piezasPorCorte};
+    }
+
+    // ── CALCULAR VINIL/DTF (despacho según técnica) ──
+    function calcularVT() {
+        if (vtTecnica === "dtf") calcularVT_DTF();
+        else                     calcularVT_Vinil();
+    }
+
+    // ── CALCULAR DTF (módulo viniltf) ──
+    function calcularVT_DTF() {
+        const items = [...document.querySelectorAll(".vt-dtf-item")];
+        if (!items.length) {
+            document.getElementById("resultado").textContent = "Agrega impresiones para calcular";
+            document._vtResult = null;
+            return;
+        }
+
+        const designs = [];
+        let hayError = false;
+        items.forEach((item, idx) => {
+            const errDiv = item.querySelector(".vt-error");
+            const tamanoKey = item.querySelector(".vt-tamano").value;
+            const cantidad  = parseInt(item.querySelector(".vt-cantidad").value) || 0;
+            const rotacion  = item.querySelector(".vt-rotacion").checked;
+            const nombre    = item.querySelector(".vt-nombre").value.trim() || `D${idx+1}`;
+            errDiv.style.display = "none"; errDiv.textContent = ""; item._vt = null;
+            if (cantidad <= 0) {
+                errDiv.textContent = "Cantidad debe ser mayor a 0";
+                errDiv.style.display = "block"; hayError = true; return;
+            }
+            const tam = VT_TAMAÑOS[tamanoKey];
+            const prev = item.querySelector(".promo-preview");
+            const imgSrc = prev && prev.style.display !== "none" ? prev.src : null;
+            const d = {idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, cantidad, rotacion, imgSrc};
+            item._vt = d; designs.push(d);
+        });
+
+        if (!designs.length) {
+            document.getElementById("resultado").textContent = hayError ? "Corrige los errores antes de calcular" : "Agrega impresiones para calcular";
+            document._vtResult = null;
+            return;
+        }
+
+        // Expandir piezas para bin packing
+        const pieces = [];
+        designs.forEach(d => {
+            for (let i = 0; i < d.cantidad; i++)
+                pieces.push({w: d.base + VT_DTF_GAP, h: d.altura + VT_DTF_GAP, canRotate: d.rotacion, label: d.nombre, designIdx: d.idx});
+        });
+        pieces.sort((a, b) => Math.max(b.w, b.h) - Math.max(a.w, a.h));
+
+        const {placements, totalLength} = vtDTFPack(pieces, VT_DTF_ANCHO);
+        const largoCm     = Math.max(totalLength, VT_DTF_MIN_LARGO);
+        const costoMat    = (largoCm / 100) * VT_DTF_PRECIO;
+        const areaTotal   = designs.reduce((s, d) => s + d.base * d.altura * d.cantidad, 0);
+        const eficiencia  = totalLength > 0 ? areaTotal / (VT_DTF_ANCHO * totalLength) * 100 : 0;
+
+        // Bajadas: 2 por impresión, continuas (no se reinician)
+        const totalBajadas = designs.length * VT_DTF_BAJADAS_X_IMP;
+        const costoBajadas = totalBajadas > 0 ? VT_DTF_BAJADA_1A + (totalBajadas - 1) * VT_DTF_BAJADA_N : 0;
+
+        const adaptativo     = document.getElementById("vt-adaptativo").checked;
+        const costoAdaptativo = adaptativo ? VT_DTF_ADAPTATIVO : 0;
+
+        // Asignar área proporcional y subtotal por impresión
+        designs.forEach(d => {
+            const area  = d.base * d.altura * d.cantidad;
+            const frac  = areaTotal > 0 ? area / areaTotal : 0;
+            d.area      = area;
+            d.matCosto  = frac * costoMat;
+            d.precioUnit= d.cantidad > 0 ? d.matCosto / d.cantidad : 0;
+            d.bajadas   = VT_DTF_BAJADAS_X_IMP;
+            d.subtotal  = d.matCosto; // las bajadas y adaptativo van a totales globales
+        });
+
+        const totalPedido = costoMat + costoBajadas + costoAdaptativo;
+
+        document._vtResult = {
+            tecnica: "dtf",
+            designs,
+            placements,
+            totalLength,
+            largoCm,
+            costoMat,
+            costoBajadas,
+            totalBajadas,
+            adaptativo,
+            costoAdaptativo,
+            totalPedido,
+            eficiencia,
+            areaTotal,
+            ancho: VT_DTF_ANCHO
+        };
+
+        const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+        items.forEach(item => {
+            if (!item._vt) return;
+            const d = item._vt;
+            item.querySelector(".dtf-calculo").innerHTML =
+                `Área ${d.area.toFixed(2)} cm² · <strong>$${fmt(d.precioUnit)} c/u</strong>` +
+                ` · ${d.bajadas} bajadas · subtotal material <strong style="color:#0055cc">$${fmt(d.matCosto)}</strong>`;
+        });
+
+        document.getElementById("resultado").innerHTML =
+            `<div>${largoCm.toFixed(1)} cm lineales · ${totalBajadas} bajadas` +
+            (adaptativo ? ` · adaptativo $${fmt(costoAdaptativo)}` : "") +
+            ` · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
+    }
+
+    // ── CALCULAR VINIL (módulo viniltf) ──
+    function calcularVT_Vinil() {
+        const items = [...document.querySelectorAll(".vt-vinil-item")];
+        if (!items.length) {
+            document.getElementById("resultado").textContent = "Agrega impresiones para calcular";
+            document._vtResult = null;
+            return;
+        }
+
+        const designs = [];
+        let hayError = false;
+        items.forEach((item, idx) => {
+            const errDiv = item.querySelector(".vt-error");
+            const tamanoKey = item.querySelector(".vt-tamano").value;
+            const cantidad  = parseInt(item.querySelector(".vt-cantidad").value) || 0;
+            const depilacion= item.querySelector(".vt-depilacion").value;
+            const nombre    = item.querySelector(".vt-nombre").value.trim() || `D${idx+1}`;
+            errDiv.style.display = "none"; errDiv.textContent = ""; item._vt = null;
+            if (cantidad <= 0) {
+                errDiv.textContent = "Cantidad debe ser mayor a 0";
+                errDiv.style.display = "block"; hayError = true; return;
+            }
+            if (!depilacion || (depilacion !== "simple" && depilacion !== "compleja")) {
+                errDiv.textContent = "Selecciona tipo de depilación";
+                errDiv.style.display = "block"; hayError = true; return;
+            }
+            const tam = VT_TAMAÑOS[tamanoKey];
+            const prev = item.querySelector(".promo-preview");
+            const imgSrc = prev && prev.style.display !== "none" ? prev.src : null;
+            designs.push({idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, cantidad, depilacion, imgSrc, _item: item});
+        });
+
+        if (!designs.length) {
+            document.getElementById("resultado").textContent = hayError ? "Corrige los errores antes de calcular" : "Agrega impresiones para calcular";
+            document._vtResult = null;
+            return;
+        }
+
+        const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+        let totalMat = 0, totalCorte = 0, totalDepilacion = 0;
+
+        designs.forEach(d => {
+            const info = vtComputarVinilLargo(d.altura, d.cantidad);
+            d.largoCm   = info.largoTotalCm;
+            d.cortes    = info.cortes;
+            d.matCosto  = (info.largoTotalCm / 100) * VT_VINIL_PRECIO;
+            d.corteCosto = vtPrecioCorte(d.tamanoKey, d.cantidad);
+            const depUnit = vtDepilacionUnit(d.depilacion, d.tamanoKey);
+            d.depUnit    = depUnit;
+            d.depCosto   = depUnit * d.cantidad;
+            d.subtotal   = d.matCosto + d.corteCosto + d.depCosto;
+            totalMat        += d.matCosto;
+            totalCorte      += d.corteCosto;
+            totalDepilacion += d.depCosto;
+            d._item.querySelector(".dtf-calculo").innerHTML =
+                `${(info.largoTotalCm/100).toFixed(3)} m · material $${fmt(d.matCosto)} + corte $${fmt(d.corteCosto)} + depilación $${fmt(d.depCosto)} = ` +
+                `<strong style="color:#0055cc">$${fmt(d.subtotal)}</strong>`;
+        });
+
+        const totalPedido = totalMat + totalCorte + totalDepilacion;
+
+        document._vtResult = {
+            tecnica: "vinil",
+            designs,
+            totalMat,
+            totalCorte,
+            totalDepilacion,
+            totalPedido
+        };
+
+        document.getElementById("resultado").innerHTML =
+            `<div>Mat. $${fmt(totalMat)} · Corte $${fmt(totalCorte)} · Depilación $${fmt(totalDepilacion)} · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
+    }
+
+    // ── BODY VINIL/DTF PARA COTIZACIÓN ──
+    function generarBodyVT(fmt) {
+        const r = document._vtResult;
+        if (!r) return "<div style='padding:32px'>Sin datos. Calcula el pedido primero.</div>";
+
+        if (r.tecnica === "dtf") {
+            let filas = "";
+            r.designs.forEach(d => {
+                const tam = VT_TAMAÑOS[d.tamanoKey];
+                const ar = `${d.base}/${d.altura}`;
+                const imgCell = d.imgSrc
+                    ? `<img src="${d.imgSrc}" style="width:54px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
+                    : `<div style="width:54px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
+                filas += `<tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      ${imgCell}
+                      <div>
+                        <strong>${d.nombre}</strong>
+                        <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} (${d.base}×${d.altura} cm)</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="text-align:center;vertical-align:middle">${d.cantidad}</td>
+                  <td style="text-align:right;vertical-align:middle">${d.area.toFixed(2)} cm²</td>
+                  <td style="text-align:center;vertical-align:middle">${d.bajadas}</td>
+                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(d.matCosto)}</strong></td>
+                </tr>`;
+            });
+
+            return `
+  <div style="padding:24px 32px 0">
+    <table>
+      <thead><tr>
+        <th>Impresión</th>
+        <th style="text-align:center">Cant.</th>
+        <th style="text-align:right">Área</th>
+        <th style="text-align:center">Bajadas</th>
+        <th style="text-align:right">Material</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <div class="sep"></div>
+  </div>
+  <div class="totales">
+    <div class="t-row"><span>Largo de tira (${r.ancho} cm)</span><span>${r.largoCm.toFixed(1)} cm</span></div>
+    <div class="t-row"><span>Material DTF</span><span>$${fmt(r.costoMat)}</span></div>
+    <div class="t-row"><span>Bajadas de plancha (${r.totalBajadas})</span><span>$${fmt(r.costoBajadas)}</span></div>
+    ${r.adaptativo ? `<div class="t-row"><span>Diseño adaptativo</span><span>$${fmt(r.costoAdaptativo)}</span></div>` : ""}
+    <div class="t-row main"><span>TOTAL</span><span>$${fmt(r.totalPedido)}</span></div>
+  </div>`;
+        }
+
+        // VINIL
+        let filas = "";
+        r.designs.forEach(d => {
+            const tam = VT_TAMAÑOS[d.tamanoKey];
+            const ar = `${d.base}/${d.altura}`;
+            const imgCell = d.imgSrc
+                ? `<img src="${d.imgSrc}" style="width:48px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
+                : `<div style="width:48px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
+            const depLabel = d.depilacion === "simple" ? "Simple" : "Compleja";
+            filas += `<tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  ${imgCell}
+                  <div>
+                    <strong>${d.nombre}</strong>
+                    <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} · dep. ${depLabel}${d.cortes>1?` · ${d.cortes} cortes`:""}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="text-align:center;vertical-align:middle">${d.cantidad}</td>
+              <td style="text-align:right;vertical-align:middle">${(d.largoCm/100).toFixed(3)} m</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(d.matCosto)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(d.corteCosto)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(d.depCosto)}</td>
+              <td style="text-align:right;vertical-align:middle"><strong>$${fmt(d.subtotal)}</strong></td>
+            </tr>`;
+        });
+
+        return `
+  <div style="padding:24px 32px 0">
+    <table>
+      <thead><tr>
+        <th>Impresión</th>
+        <th style="text-align:center">Cant.</th>
+        <th style="text-align:right">Largo</th>
+        <th style="text-align:right">Material</th>
+        <th style="text-align:right">Corte</th>
+        <th style="text-align:right">Depilación</th>
+        <th style="text-align:right">Subtotal</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <div class="sep"></div>
+  </div>
+  <div class="totales">
+    <div class="t-row"><span>Material Vinil</span><span>$${fmt(r.totalMat)}</span></div>
+    <div class="t-row"><span>Corte</span><span>$${fmt(r.totalCorte)}</span></div>
+    <div class="t-row"><span>Depilación</span><span>$${fmt(r.totalDepilacion)}</span></div>
+    <div class="t-row main"><span>TOTAL</span><span>$${fmt(r.totalPedido)}</span></div>
+  </div>`;
+    }
+
+    // ── SVG DISTRIBUCIÓN VINIL/DTF (solo DTF) ──
+    function generarSVGStringVT() {
+        const r = document._vtResult;
+        if (!r || r.tecnica !== "dtf") return null;
+        const {placements, totalLength, designs, ancho} = r;
+        const scale = Math.min(9, 700 / Math.max(totalLength, 1));
+        const svgW = Math.round(ancho * scale);
+        const svgH = Math.round(totalLength * scale);
+        const margin = 44;
+        const colorMap = {};
+        designs.forEach((d, i) => { colorMap[d.idx] = VT_COLORES[i % VT_COLORES.length]; });
+
+        let rects = "";
+        placements.forEach(p => {
+            const x = p.x * scale, y = p.y * scale;
+            const w = (p.w - VT_DTF_GAP) * scale, h = (p.h - VT_DTF_GAP) * scale;
+            const col = colorMap[p.designIdx] || "#ccc";
+            const fs = Math.max(6, Math.min(11, Math.min(w, h) / 3));
+            rects += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" fill-opacity="0.75" stroke="${col}" stroke-width="0.8"/>`;
+            if (w > 22 && h > 12) rects += `<text x="${(x+w/2).toFixed(1)}" y="${(y+h/2).toFixed(1)}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#111" font-family="Arial,sans-serif">${p.label}</text>`;
+        });
+
+        let legend = "";
+        designs.forEach((d, i) => {
+            const ly = svgH + margin + 20 + i * 18;
+            const col = VT_COLORES[i % VT_COLORES.length];
+            const tam = VT_TAMAÑOS[d.tamanoKey];
+            legend += `<rect x="0" y="${ly}" width="13" height="13" fill="${col}" fill-opacity="0.75" rx="2"/>`;
+            legend += `<text x="17" y="${ly+10}" font-size="11" font-family="Arial,sans-serif" fill="#333">${d.nombre} — ${tam.nombre} (${d.base}×${d.altura} cm) × ${d.cantidad} pzas.</text>`;
+        });
+
+        const totalH = svgH + margin + 20 + designs.length * 18 + 20;
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${svgW + margin*2}" height="${totalH}">
+  <rect x="${margin}" y="0" width="${svgW}" height="${svgH}" fill="#fafafa" stroke="#444" stroke-width="1.5"/>
+  <g transform="translate(${margin},0)">${rects}</g>
+  <line x1="${margin}" y1="${svgH+10}" x2="${margin+svgW}" y2="${svgH+10}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin}" y1="${svgH+6}" x2="${margin}" y2="${svgH+14}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin+svgW}" y1="${svgH+6}" x2="${margin+svgW}" y2="${svgH+14}" stroke="#444" stroke-width="1"/>
+  <text x="${margin+svgW/2}" y="${svgH+26}" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" fill="#333">${ancho} cm (ancho de tira)</text>
+  <line x1="${margin-12}" y1="0" x2="${margin-12}" y2="${svgH}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin-16}" y1="0" x2="${margin-8}" y2="0" stroke="#444" stroke-width="1"/>
+  <line x1="${margin-16}" y1="${svgH}" x2="${margin-8}" y2="${svgH}" stroke="#444" stroke-width="1"/>
+  <text x="${margin-12}" y="${svgH/2}" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" fill="#333" transform="rotate(-90,${margin-12},${svgH/2})">${totalLength.toFixed(1)} cm</text>
+  <g transform="translate(${margin},0)">${legend}</g>
+</svg>`;
+    }
+
+    function generarSVGDataURIVT() {
+        const svg = generarSVGStringVT();
+        if (!svg) return "#";
+        return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     }
 
     // ── INIT ──
