@@ -2116,8 +2116,12 @@
                 `<strong style="color:#0055cc">$${fmt(d.subtotal)}</strong>`;
         });
 
+        // Bajadas de plancha (misma lógica que DTF): cada PIEZA consume 2 bajadas
+        const totalBajadas  = designs.length * globalCantidad * VT_DTF_BAJADAS_X_IMP;
+        const costoBajadas  = totalBajadas > 0 ? VT_DTF_BAJADA_1A + (totalBajadas - 1) * VT_DTF_BAJADA_N : 0;
+
         const costoPlayeras = precioPrenda * globalCantidad;
-        const totalPedido   = costoPlayeras + totalMat + totalCorte + totalDepilacion;
+        const totalPedido   = costoPlayeras + totalMat + totalCorte + totalDepilacion + costoBajadas;
 
         document._vtResult = {
             tecnica: "vinil",
@@ -2129,11 +2133,13 @@
             totalMat,
             totalCorte,
             totalDepilacion,
+            costoBajadas,
+            totalBajadas,
             totalPedido
         };
 
         document.getElementById("resultado").innerHTML =
-            `<div>Mat. $${fmt(totalMat)} · Corte $${fmt(totalCorte)} · Depilación $${fmt(totalDepilacion)} · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
+            `<div>Mat. $${fmt(totalMat)} · Corte $${fmt(totalCorte)} · Depilación $${fmt(totalDepilacion)} · ${totalBajadas} bajadas ($${fmt(costoBajadas)}) · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
     }
 
     // ── BODY VINIL/DTF PARA COTIZACIÓN ──
@@ -2221,6 +2227,7 @@
 
         // VINIL
         const cantV = r.globalCantidad || 0;
+        const bajadaXDisenoV = r.designs.length > 0 ? (r.costoBajadas || 0) / r.designs.length : 0;
         let filas = "";
 
         // Fila playera
@@ -2233,7 +2240,7 @@
             </tr>`;
         }
 
-        // Filas de impresiones
+        // Filas de impresiones (incluyen su parte proporcional de bajadas)
         r.designs.forEach(d => {
             const tam = VT_TAMAÑOS[d.tamanoKey];
             const ar = `${d.base}/${d.altura}`;
@@ -2241,7 +2248,8 @@
                 ? `<img src="${d.imgSrc}" style="width:48px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
                 : `<div style="width:48px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
             const depLabel = d.depilacion === "simple" ? "Simple" : "Compleja";
-            const unit = cantV > 0 ? d.subtotal / cantV : 0;
+            const costoD = d.subtotal + bajadaXDisenoV;
+            const unit   = cantV > 0 ? costoD / cantV : 0;
             filas += `<tr>
               <td>
                 <div style="display:flex;align-items:center;gap:8px">
@@ -2254,12 +2262,12 @@
               </td>
               <td style="text-align:center;vertical-align:middle">${cantV}</td>
               <td style="text-align:right;vertical-align:middle">$${fmt(unit)}</td>
-              <td style="text-align:right;vertical-align:middle">$${fmt(d.subtotal)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(costoD)}</td>
             </tr>`;
         });
 
         // Fila resumen integrado
-        const costoVinilTotal = r.totalMat + r.totalCorte + r.totalDepilacion;
+        const costoVinilTotal = r.totalMat + r.totalCorte + r.totalDepilacion + (r.costoBajadas || 0);
         const unitInt = cantV > 0 ? (r.costoPlayeras + costoVinilTotal) / cantV : 0;
         const descInt = r.precioPrenda > 0
             ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} VINIL`
