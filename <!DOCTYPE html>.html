@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fb;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .tab:hover {
+            border-color: #007bff;
+        }
+
+        .tab.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button.eliminar {
+            background: #ff4d4d;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        button.eliminar:hover {
+            background: #e63946;
+        }
+
+        .impresion {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007bff;
+        }
+
+        .impresion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .impresion-header strong {
+            color: #333;
+        }
+
+        .impresion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .result {
+            background: #111;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .agregar-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #ff4d4d;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 0;
+            }
+
+            body {
+                padding: 10px;
+            }
+
+            .impresion-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- MÉTODO -->
+        <div class="tabs">
+            <div class="tab active" data-metodo="blanca">Serigrafía blanca</div>
+            <div class="tab" data-metodo="color">Serigrafía color</div>
+        </div>
+
+        <!-- DATOS -->
+        <div class="box">
+            <div class="form-group">
+                <label for="playera">Modelo de playera</label>
+                <select id="playera"></select>
+            </div>
+            <div class="form-group">
+                <label for="cantidad">Cantidad</label>
+                <input type="number" id="cantidad" value="50" min="1">
+                <div class="error" id="error-cantidad"></div>
+            </div>
+        </div>
+
+        <!-- IMPRESIONES -->
+        <div class="box">
+            <h3>Impresiones</h3>
+            <div id="impresiones"></div>
+            <button class="agregar-btn" id="agregar-btn">+ Agregar impresión</button>
+        </div>
+
+        <!-- RESULTADO -->
+        <div class="result" id="resultado">Total: $0.00</div>
+    </div>
+
+    <script>
+        // 🔹 ESTADO GLOBAL
+        let metodo = "blanca";
+
+        // 🔹 PLAYERAS BLANCAS
+        const playeras_blancas = [
+            {nombre: "MODELO 250 JASPEADA", precio: 59.23},
+            {nombre: "MODELO 300 MANGA CORTA (BLANCA)", precio: 56.66},
+            {nombre: "MODELO 304 MANGA LARGA (BLANCA)", precio: 73.60},
+            {nombre: "MODELO 310 SIN MANGA (BLANCA)", precio: 53.41},
+            {nombre: "MOD. 306 C/V MANGA CORTA (BLANCA)", precio: 58.33},
+            {nombre: "ACTIVI TEE 1302", precio: 89.01}
+        ];
+
+        // 🔹 PLAYERAS COLOR
+        const playeras_color = [
+            {nombre: "MOD 750 C/R PEINADO BLANCA O COLOR", precio: 97.74},
+            {nombre: "MOD 250 JASPEADA", precio: 55.78},
+            {nombre: "MOD 300 C/R (MANGA CORTA)", precio: 64.61},
+            {nombre: "MOD 304 (MANGA LARGA)", precio: 91.68},
+            {nombre: "MOD 310 (SIN MANGA)", precio: 61.41},
+            {nombre: "MOD 701 SUDADERA", precio: 221.86},
+            {nombre: "MOD 306 C/V MANGA CORTA (COLOR)", precio: 69.67},
+            {nombre: "MOD 356 C/V MANGA CORTA COLOR JASPE", precio: 69.67},
+            {nombre: "DRY WEAR C/R MAYOR 760/765", precio: 142.98},
+            {nombre: "MOD 354 C/R MANGA LARGA (COLORES JASPE)", precio: 91.68},
+            {nombre: "ACTIV TEE 1302", precio: 89.01},
+            {nombre: "ACTIV TEE 1304 MANGA LARGA", precio: 107.50},
+            {nombre: "MU820 OVERSIZE", precio: 287.54},
+            {nombre: "MOD C1504 TIPO POLO MANGA LARGA", precio: 186.42}
+        ];
+
+        // 🔹 TABLA BLANCA
+        const tabla_blanca = {
+            "1-10": {
+                CHICA: [33.35, 36.02, 38.54, 41.24, 42.89],
+                GRANDE: [66.70, 72.04, 77.07, 82.48, 85.78],
+                EXTRA: [76.71, 82.84, 88.63, 94.85, 98.65]
+            },
+            "11-20": {
+                CHICA: [26.68, 28.81, 30.84, 32.69, 34.00],
+                GRANDE: [53.36, 57.63, 61.67, 65.38, 67.99],
+                EXTRA: [61.36, 66.27, 70.92, 75.19, 78.19]
+            },
+            "21-30": {
+                CHICA: [21.61, 23.35, 24.98, 26.48, 27.54],
+                GRANDE: [43.22, 46.69, 49.96, 52.96, 55.08],
+                EXTRA: [49.70, 53.69, 57.45, 60.90, 63.34]
+            },
+            "31-40": {
+                CHICA: [17.72, 19.14, 20.48, 21.72, 22.59],
+                GRANDE: [35.44, 38.29, 40.97, 43.44, 45.18],
+                EXTRA: [40.76, 44.03, 47.11, 49.95, 51.96]
+            },
+            "41-100": {
+                CHICA: [14.71, 15.89, 17.01, 18.03, 18.76],
+                GRANDE: [29.43, 31.79, 34.02, 36.06, 37.51],
+                EXTRA: [33.84, 36.56, 39.12, 41.47, 43.14]
+            },
+            "101-200": {
+                CHICA: [12.36, 13.35, 14.29, 15.15, 15.76],
+                GRANDE: [24.72, 26.71, 28.59, 30.31, 31.52],
+                EXTRA: [28.43, 30.71, 32.88, 34.85, 36.25]
+            },
+            "201-300": {
+                CHICA: [10.51, 11.35, 12.14, 12.87, 13.39],
+                GRANDE: [21.01, 22.69, 24.28, 25.75, 26.79],
+                EXTRA: [24.16, 26.10, 27.92, 29.61, 30.80]
+            },
+            "301-500": {
+                CHICA: [8.40, 9.08, 9.72, 10.31, 10.72],
+                GRANDE: [16.81, 18.16, 19.44, 20.61, 21.44],
+                EXTRA: [19.33, 20.88, 22.35, 23.70, 24.65]
+            }
+        };
+
+        // 🔹 TABLA COLOR (igual estructura que blanca, ajusta con tus precios)
+        const tabla_color = {
+            "1-10": {
+                CHICA: [45.50, 49.15, 52.60, 56.30, 58.60],
+                GRANDE: [91.00, 98.30, 105.20, 112.60, 117.20],
+                EXTRA: [104.80, 113.00, 121.20, 129.70, 135.00]
+            },
+            "11-20": {
+                CHICA: [36.40, 39.30, 42.10, 44.70, 46.40],
+                GRANDE: [72.80, 78.60, 84.20, 89.40, 92.80],
+                EXTRA: [83.80, 90.40, 96.80, 102.80, 106.80]
+            },
+            "21-30": {
+                CHICA: [29.40, 31.80, 34.10, 36.10, 37.60],
+                GRANDE: [58.80, 63.60, 68.20, 72.20, 75.20],
+                EXTRA: [67.70, 73.20, 78.50, 83.20, 86.70]
+            },
+            "31-40": {
+                CHICA: [24.10, 26.10, 27.90, 29.60, 30.80],
+                GRANDE: [48.20, 52.20, 55.80, 59.20, 61.60],
+                EXTRA: [55.50, 60.00, 64.20, 68.10, 70.90]
+            },
+            "41-100": {
+                CHICA: [20.00, 21.60, 23.20, 24.50, 25.60],
+                GRANDE: [40.00, 43.20, 46.40, 49.00, 51.20],
+                EXTRA: [46.00, 49.70, 53.40, 56.40, 58.90]
+            },
+            "101-200": {
+                CHICA: [16.80, 18.20, 19.50, 20.70, 21.50],
+                GRANDE: [33.60, 36.40, 39.00, 41.40, 43.00],
+                EXTRA: [38.70, 41.90, 44.90, 47.60, 49.50]
+            },
+            "201-300": {
+                CHICA: [14.30, 15.40, 16.50, 17.50, 18.20],
+                GRANDE: [28.60, 30.80, 33.00, 35.00, 36.40],
+                EXTRA: [32.90, 35.50, 38.00, 40.30, 41.90]
+            },
+            "301-500": {
+                CHICA: [11.40, 12.30, 13.20, 14.00, 14.60],
+                GRANDE: [22.80, 24.60, 26.40, 28.00, 29.20],
+                EXTRA: [26.20, 28.30, 30.40, 32.20, 33.60]
+            }
+        };
+
+        // 🔹 OBTENER RANGO
+        function obtenerRango(cantidad) {
+            if (cantidad < 1) return null;
+            if (cantidad <= 10) return "1-10";
+            if (cantidad <= 20) return "11-20";
+            if (cantidad <= 30) return "21-30";
+            if (cantidad <= 40) return "31-40";
+            if (cantidad <= 100) return "41-100";
+            if (cantidad <= 200) return "101-200";
+            if (cantidad <= 300) return "201-300";
+            if (cantidad <= 500) return "301-500";
+            return null;
+        }
+
+        // 🔹 CARGAR PLAYERAS
+        function cargarPlayeras() {
+            const select = document.getElementById("playera");
+            select.innerHTML = "";
+            const lista = metodo === "blanca" ? playeras_blancas : playeras_color;
+            lista.forEach(p => {
+                const op = document.createElement("option");
+                op.value = p.precio;
+                op.textContent = `${p.nombre} - $${p.precio.toFixed(2)}`;
+                select.appendChild(op);
+            });
+            calcular();
+        }
+
+        // 🔹 AGREGAR IMPRESIÓN
+        function agregarImpresion() {
+            const div = document.createElement("div");
+            div.className = "impresion";
+            div.innerHTML = `
+                <div class="impresion-header">
+                    <strong>Impresión</strong>
+                    <button class="eliminar" type="button">Eliminar</button>
+                </div>
+                <div class="impresion-grid">
+                    <div class="form-group">
+                        <label>Tamaño</label>
+                        <select class="tamano">
+                            <option value="CHICA">Chica</option>
+                            <option value="GRANDE">Grande</option>
+                            <option value="EXTRA">Extra Grande</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tintas</label>
+                        <select class="tintas">
+                            <option value="0">1 tinta</option>
+                            <option value="1">2 tintas</option>
+                            <option value="2">3 tintas</option>
+                            <option value="3">4 tintas</option>
+                            <option value="4">Todo color</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            const btnEliminar = div.querySelector(".eliminar");
+            btnEliminar.addEventListener("click", function() {
+                div.remove();
+                calcular();
+            });
+
+            const selects = div.querySelectorAll("select");
+            selects.forEach(select => {
+                select.addEventListener("change", calcular);
+            });
+
+            document.getElementById("impresiones").appendChild(div);
+            calcular();
+        }
+
+        // 🔹 CALCULAR
+        function calcular() {
+            const cantidadInput = document.getElementById("cantidad");
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            const precioPlayera = parseFloat(document.getElementById("playera").value) || 0;
+            const errorDiv = document.getElementById("error-cantidad");
+
+            // Validación
+            if (cantidad < 1) {
+                errorDiv.textContent = "La cantidad debe ser mayor a 0";
+                document.getElementById("resultado").textContent = "Error: cantidad inválida";
+                return;
+            }
+
+            const rango = obtenerRango(cantidad);
+            if (!rango) {
+                errorDiv.textContent = "La cantidad debe estar entre 1 y 500";
+                document.getElementById("resultado").textContent = "Error: fuera de rango";
+                return;
+            }
+
+            errorDiv.textContent = "";
+            const tabla = metodo === "blanca" ? tabla_blanca : tabla_color;
+
+            let costoImpresion = 0;
+            const impresiones = document.querySelectorAll(".impresion");
+
+            if (impresiones.length === 0) {
+                const unitario = precioPlayera;
+                const total = unitario * cantidad;
+                document.getElementById("resultado").innerHTML = 
+                    `<div><strong>Rango:</strong> ${rango} | <strong>Unitario:</strong> $${unitario.toFixed(2)} | <strong>Total:</strong> $${total.toFixed(2)}</div>`;
+                return;
+            }
+
+            impresiones.forEach(imp => {
+                const tamano = imp.querySelector(".tamano").value;
+                const indexTintas = parseInt(imp.querySelector(".tintas").value);
+                const precioTamano = tabla[rango][tamano][indexTintas];
+                costoImpresion += precioTamano;
+            });
+
+            const unitario = precioPlayera + costoImpresion;
+            const total = unitario * cantidad;
+
+            document.getElementById("resultado").innerHTML = 
+                `<div><strong>Rango:</strong> ${rango} | <strong>Unitario:</strong> $${unitario.toFixed(2)} | <strong>Total:</strong> $${total.toFixed(2)}</div>`;
+        }
+
+        // 🔹 EVENT LISTENERS
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", function() {
+                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+                this.classList.add("active");
+                metodo = this.dataset.metodo;
+                cargarPlayeras();
+            });
+        });
+
+        document.getElementById("playera").addEventListener("change", calcular);
+        document.getElementById("cantidad").addEventListener("input", calcular);
+        document.getElementById("agregar-btn").addEventListener("click", agregarImpresion);
+
+        // Inicializar
+        cargarPlayeras();
+    </script>
+</body>
+</html>

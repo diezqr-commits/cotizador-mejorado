@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fb;
+            padding: 20px;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* ── TABS MÉTODO ── */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        .tab {
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .tab:hover { border-color: #007bff; }
+        .tab.active { background: #007bff; color: white; border-color: #007bff; }
+
+        /* ── TIPO PRENDA (bordado) ── */
+        .tipo-prenda-row { display: flex; gap: 8px; }
+
+        .tipo-tab {
+            padding: 7px 18px;
+            border-radius: 6px;
+            background: #f0f4ff;
+            cursor: pointer;
+            border: 1px solid #c8d8ff;
+            font-size: 13px;
+            font-weight: 500;
+            color: #5577bb;
+            transition: all 0.2s;
+        }
+        .tipo-tab:hover { border-color: #007bff; color: #007bff; }
+        .tipo-tab.active { background: #007bff; color: white; border-color: #007bff; }
+
+        /* ── CARDS ── */
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        h3 { margin-bottom: 15px; font-size: 16px; color: #333; }
+
+        /* ── BOTONES ── */
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        button:hover { background: #0056b3; }
+
+        button.eliminar {
+            background: #ff4d4d;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        button.eliminar:hover { background: #e63946; }
+
+        .agregar-btn { width: 100%; margin-top: 10px; }
+
+        /* ── ITEMS (impresiones / bordados) ── */
+        .item {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid #007bff;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .item-header strong { color: #333; }
+
+        .item-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .item-grid .form-group { margin-bottom: 0; }
+
+        /* ── PONCHADO ── */
+        .ponchado-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+        .check-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+            user-select: none;
+        }
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #007bff;
+        }
+
+        .ponchado-detalle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ponchado-detalle input { width: 80px; }
+        .ponchado-detalle span { font-size: 13px; color: #666; white-space: nowrap; }
+
+        /* ── RESULTADO ── */
+        .result {
+            background: #111;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            line-height: 1.7;
+        }
+
+        .error { color: #ff4d4d; font-size: 13px; margin-top: 5px; }
+
+        .btn-generar {
+            width: 100%;
+            margin-top: 12px;
+            padding: 14px;
+            background: #28a745;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 10px;
+            letter-spacing: 0.3px;
+        }
+        .btn-generar:hover { background: #218838; }
+
+        /* ── PROMOCIONALES ── */
+        .promo-layout {
+            display: grid;
+            grid-template-columns: 96px 1fr;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .promo-img-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 96px;
+            height: 96px;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            overflow: hidden;
+            background: #f4f4f4;
+            transition: border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .promo-img-label:hover { border-color: #007bff; }
+        .promo-img-label img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .promo-img-label span {
+            font-size: 11px;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.4;
+            padding: 6px;
+        }
+        .promo-img-label input[type="file"] { display: none; }
+
+        .promo-pegar-btn {
+            width: 96px;
+            margin-top: 6px;
+            padding: 6px 4px;
+            font-size: 11px;
+            background: #f0f4ff;
+            color: #4466cc;
+            border: 1px solid #c8d8ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .promo-pegar-btn:hover { background: #dce8ff; }
+
+        .promo-calculo {
+            margin-top: 10px;
+            padding: 9px 12px;
+            background: #f0f5ff;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #334;
+            line-height: 1.7;
+            border-left: 3px solid #007bff;
+        }
+
+        /* ── DTF UV ── */
+        .dtf-layout {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 14px;
+            align-items: start;
+        }
+        .dtf-img-col { display: flex; flex-direction: column; gap: 6px; }
+        .dtf-img-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 60px;
+            max-height: 200px;
+            aspect-ratio: 1;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            overflow: hidden;
+            background: #f4f4f4;
+            transition: border-color 0.2s;
+        }
+        .dtf-img-label:hover { border-color: #007bff; }
+        .dtf-img-label img { width: 100%; height: 100%; object-fit: cover; }
+        .dtf-img-label span { font-size: 11px; color: #bbb; text-align: center; line-height: 1.4; padding: 6px; }
+        .dtf-img-label input[type="file"] { display: none; }
+        .dtf-pegar-btn {
+            width: 100%;
+            padding: 6px 4px;
+            font-size: 11px;
+            background: #f0f4ff;
+            color: #4466cc;
+            border: 1px solid #c8d8ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .dtf-pegar-btn:hover { background: #dce8ff; }
+        .dtf-calculo { margin-top: 8px; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .item-grid { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
+            .tab { width: 100%; }
+            .result { font-size: 13px; }
+            .promo-layout { grid-template-columns: 1fr; }
+            .promo-img-label { width: 100%; height: 160px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- TABS MÉTODO -->
+    <div class="tabs">
+        <div class="tab active" data-metodo="estandar">Serigrafía estándar</div>
+        <div class="tab" data-metodo="presecada">Serigrafía presecada</div>
+        <div class="tab" data-metodo="bordado">Bordado</div>
+        <div class="tab" data-metodo="promocionales">Promocionales</div>
+        <div class="tab" data-metodo="dtfuv">DTF UV</div>
+    </div>
+
+    <!-- DATOS -->
+    <div class="box">
+
+        <!-- Tipo prenda (solo bordado) -->
+        <div class="form-group" id="tipo-prenda-group" style="display:none">
+            <label>Tipo de prenda</label>
+            <div class="tipo-prenda-row">
+                <div class="tipo-tab active" data-tipo="blanco">Blanca</div>
+                <div class="tipo-tab" data-tipo="color">Color</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cliente">Cliente</label>
+            <input type="text" id="cliente" placeholder="Nombre del cliente">
+        </div>
+
+        <div class="form-group" id="playera-group">
+            <label for="playera">Modelo de prenda</label>
+            <select id="playera"></select>
+        </div>
+
+        <div class="form-group" id="cantidad-group">
+            <label for="cantidad">Cantidad</label>
+            <input type="number" id="cantidad" value="50" min="1">
+            <div class="error" id="error-cantidad"></div>
+        </div>
+
+    </div>
+
+    <!-- IMPRESIONES / BORDADOS / PROMOCIONALES -->
+    <div class="box">
+        <h3 id="titulo-items">Impresiones</h3>
+        <div id="items"></div>
+        <button class="agregar-btn" id="agregar-btn">+ Agregar impresión</button>
+    </div>
+
+    <!-- PONCHADO (solo bordado) -->
+    <div class="box" id="ponchado-box" style="display:none">
+        <h3>Ponchado</h3>
+        <div class="ponchado-row">
+            <label class="check-label">
+                <input type="checkbox" id="ponchado-check">
+                Incluir ponchado
+            </label>
+            <div class="ponchado-detalle" id="ponchado-detalle" style="display:none">
+                <input type="number" id="ponchado-cantidad" value="1" min="1" max="4">
+                <span>diseño(s) × $145.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div class="result" id="resultado">Total: $0.00</div>
+    <button class="btn-generar" id="btn-generar">Generar cotización</button>
+
+</div>
+<script>
+    // ── ESTADO ──
+    let metodo = "estandar";
+    let tipoPrenda = "blanco";
+
+    // ── PLAYERAS SERIGRAFÍA ESTÁNDAR ──
+    const playeras_estandar = [
+        {nombre: "- Sin prenda -", precio: 0},
+        {nombre: "MODELO 250 JASPEADA", precio: 59.23},
+        {nombre: "MODELO 300 MANGA CORTA (BLANCA)", precio: 56.66},
+        {nombre: "MODELO 304 MANGA LARGA (BLANCA)", precio: 73.60},
+        {nombre: "MODELO 310 SIN MANGA (BLANCA)", precio: 53.41},
+        {nombre: "MOD. 306 C/V MANGA CORTA (BLANCA)", precio: 58.33},
+        {nombre: "ACTIVI TEE 1302", precio: 89.01}
+    ];
+
+    // ── PLAYERAS SERIGRAFÍA PRESECADA ──
+    const playeras_presecada = [
+        {nombre: "- Sin prenda -", precio: 0},
+        {nombre: "MOD 750 C/R PEINADO BLANCA O COLOR", precio: 97.74},
+        {nombre: "MOD 250 JASPEADA", precio: 55.78},
+        {nombre: "MOD 300 C/R (MANGA CORTA)", precio: 64.61},
+        {nombre: "MOD 304 (MANGA LARGA)", precio: 91.68},
+        {nombre: "MOD 310 (SIN MANGA)", precio: 61.41},
+        {nombre: "MOD 701 SUDADERA", precio: 221.86},
+        {nombre: "MOD 306 C/V MANGA CORTA (COLOR)", precio: 69.67},
+        {nombre: "MOD 356 C/V MANGA CORTA COLOR JASPE", precio: 69.67},
+        {nombre: "DRY WEAR C/R MAYOR 760/765", precio: 142.98},
+        {nombre: "MOD 354 C/R MANGA LARGA (COLORES JASPE)", precio: 91.68},
+        {nombre: "ACTIV TEE 1302", precio: 89.01},
+        {nombre: "ACTIV TEE 1304 MANGA LARGA", precio: 107.50},
+        {nombre: "MU820 OVERSIZE", precio: 287.54},
+        {nombre: "MOD C1504 TIPO POLO MANGA LARGA", precio: 186.42}
+    ];
+
+    // ── PLAYERAS BORDADO ──
+    const playeras_bordado = [
+        {nombre: "- Sin prenda -",                          blanco: 0,      color: 0},
+        {nombre: "YAZBEK MOD. 550 NIÑOS",                  blanco: 69.25,  color: 85.63},
+        {nombre: "PLAY POLO YAZBEK MOD. 550",              blanco: 109.50, color: 127.03},
+        {nombre: "MAYORK WAFFLE MOD. 700",                 blanco: 204.59, color: 231.97},
+        {nombre: "MAYORK FIT MOD. 790",                    blanco: 239.21, color: 260.22},
+        {nombre: "MAYORK DRY WEAR TIPO POLO MOD. 780",     blanco: 183.94, color: 183.94},
+        {nombre: "MAYORK MANGA LARGA MOD. 704",            blanco: 260.97, color: 295.48},
+        {nombre: "MAYORK PEKES MOD. 700 NIÑOS",            blanco: 170.06, color: 184.74},
+        {nombre: "PLAY POLO NY MAYORKA MOD. 775",          blanco: 325.86, color: 325.86},
+        {nombre: "MAYORK COMBINADA MOD. 710 ADULTO",       blanco: 227.33, color: 252.94},
+        {nombre: "MAYORK ADVANCE MOD. 770 ADULTO",         blanco: 203.03, color: 213.43}
+    ];
+
+    // ── TABLA SERIGRAFÍA ESTÁNDAR ──
+    const tabla_estandar = {
+        "1-10":    {CHICA:[33.35,36.02,38.54,41.24,42.89], GRANDE:[66.70,72.04,77.07,82.48,85.78], EXTRA:[76.71,82.84,88.63,94.85,98.65]},
+        "11-20":   {CHICA:[26.68,28.81,30.84,32.69,34.00], GRANDE:[53.36,57.63,61.67,65.38,67.99], EXTRA:[61.36,66.27,70.92,75.19,78.19]},
+        "21-30":   {CHICA:[21.61,23.35,24.98,26.48,27.54], GRANDE:[43.22,46.69,49.96,52.96,55.08], EXTRA:[49.70,53.69,57.45,60.90,63.34]},
+        "31-40":   {CHICA:[17.72,19.14,20.48,21.72,22.59], GRANDE:[35.44,38.29,40.97,43.44,45.18], EXTRA:[40.76,44.03,47.11,49.95,51.96]},
+        "41-100":  {CHICA:[14.71,15.89,17.01,18.03,18.76], GRANDE:[29.43,31.79,34.02,36.06,37.51], EXTRA:[33.84,36.56,39.12,41.47,43.14]},
+        "101-200": {CHICA:[12.36,13.35,14.29,15.15,15.76], GRANDE:[24.72,26.71,28.59,30.31,31.52], EXTRA:[28.43,30.71,32.88,34.85,36.25]},
+        "201-300": {CHICA:[10.51,11.35,12.14,12.87,13.39], GRANDE:[21.01,22.69,24.28,25.75,26.79], EXTRA:[24.16,26.10,27.92,29.61,30.80]},
+        "301-500": {CHICA:[8.40, 9.08, 9.72,10.31,10.72],  GRANDE:[16.81,18.16,19.44,20.61,21.44], EXTRA:[19.33,20.88,22.35,23.70,24.65]}
+    };
+
+    // ── TABLA SERIGRAFÍA PRESECADA ──
+    const tabla_presecada = {
+        "1-10":    {CHICA:[45.50,49.15,52.60,56.30,58.60],  GRANDE:[91.00, 98.30,105.20,112.60,117.20], EXTRA:[104.80,113.00,121.20,129.70,135.00]},
+        "11-20":   {CHICA:[36.40,39.30,42.10,44.70,46.40],  GRANDE:[72.80, 78.60, 84.20, 89.40, 92.80], EXTRA:[83.80, 90.40, 96.80,102.80,106.80]},
+        "21-30":   {CHICA:[29.40,31.80,34.10,36.10,37.60],  GRANDE:[58.80, 63.60, 68.20, 72.20, 75.20], EXTRA:[67.70, 73.20, 78.50, 83.20, 86.70]},
+        "31-40":   {CHICA:[24.10,26.10,27.90,29.60,30.80],  GRANDE:[48.20, 52.20, 55.80, 59.20, 61.60], EXTRA:[55.50, 60.00, 64.20, 68.10, 70.90]},
+        "41-100":  {CHICA:[20.00,21.60,23.20,24.50,25.60],  GRANDE:[40.00, 43.20, 46.40, 49.00, 51.20], EXTRA:[46.00, 49.70, 53.40, 56.40, 58.90]},
+        "101-200": {CHICA:[16.80,18.20,19.50,20.70,21.50],  GRANDE:[33.60, 36.40, 39.00, 41.40, 43.00], EXTRA:[38.70, 41.90, 44.90, 47.60, 49.50]},
+        "201-300": {CHICA:[14.30,15.40,16.50,17.50,18.20],  GRANDE:[28.60, 30.80, 33.00, 35.00, 36.40], EXTRA:[32.90, 35.50, 38.00, 40.30, 41.90]},
+        "301-500": {CHICA:[11.40,12.30,13.20,14.00,14.60],  GRANDE:[22.80, 24.60, 26.40, 28.00, 29.20], EXTRA:[26.20, 28.30, 30.40, 32.20, 33.60]}
+    };
+
+    // ── TABLA BORDADO ──
+    const tabla_bordado = {
+        "1-10":   {CHICO: 59, GRANDE: 84},
+        "11-20":  {CHICO: 54, GRANDE: 79},
+        "21-50":  {CHICO: 51, GRANDE: 74},
+        "51-100": {CHICO: 47, GRANDE: 69}
+    };
+
+    // ── TABLA PROMOCIONALES ──
+    const tabla_promocionales = {
+        "1-4":     {NORMAL: 47.25, CHICA: 44.10},
+        "5-9":     {NORMAL: 42.00, CHICA: 38.85},
+        "10-19":   {NORMAL: 45.00, CHICA: 19.95},
+        "20-29":   {NORMAL: 40.00, CHICA: 19.95},
+        "30-49":   {NORMAL: 35.00, CHICA: 13.65},
+        "50-99":   {NORMAL: 15.75, CHICA: 11.55},
+        "100-199": {NORMAL: 13.13, CHICA:  8.93},
+        "200-299": {NORMAL: 11.03, CHICA:  7.88},
+        "300-399": {NORMAL:  9.45, CHICA:  6.30},
+        "400-499": {NORMAL:  8.40, CHICA:  5.88},
+        "500-599": {NORMAL:  7.35, CHICA:  5.04},
+        "600-699": {NORMAL:  6.83, CHICA:  4.73},
+        "700-799": {NORMAL:  6.09, CHICA:  3.99},
+        "800-899": {NORMAL:  5.78, CHICA:  3.68},
+        "900-999": {NORMAL:  5.04, CHICA:  2.84},
+        "1000+":   {NORMAL:  4.73, CHICA:  2.63}
+    };
+
+    // ── RANGOS ──
+    function obtenerRango(cantidad) {
+        if (metodo === "bordado") {
+            if (cantidad <= 10)  return "1-10";
+            if (cantidad <= 20)  return "11-20";
+            if (cantidad <= 50)  return "21-50";
+            if (cantidad <= 100) return "51-100";
+            return null;
+        }
+        if (cantidad <= 10)  return "1-10";
+        if (cantidad <= 20)  return "11-20";
+        if (cantidad <= 30)  return "21-30";
+        if (cantidad <= 40)  return "31-40";
+        if (cantidad <= 100) return "41-100";
+        if (cantidad <= 200) return "101-200";
+        if (cantidad <= 300) return "201-300";
+        if (cantidad <= 500) return "301-500";
+        return null;
+    }
+
+    function obtenerRangoPromo(cantidad) {
+        if (cantidad <=   4) return "1-4";
+        if (cantidad <=   9) return "5-9";
+        if (cantidad <=  19) return "10-19";
+        if (cantidad <=  29) return "20-29";
+        if (cantidad <=  49) return "30-49";
+        if (cantidad <=  99) return "50-99";
+        if (cantidad <= 199) return "100-199";
+        if (cantidad <= 299) return "200-299";
+        if (cantidad <= 399) return "300-399";
+        if (cantidad <= 499) return "400-499";
+        if (cantidad <= 599) return "500-599";
+        if (cantidad <= 699) return "600-699";
+        if (cantidad <= 799) return "700-799";
+        if (cantidad <= 899) return "800-899";
+        if (cantidad <= 999) return "900-999";
+        return "1000+";
+    }
+
+    // ── CARGAR PLAYERAS ──
+    function cargarPlayeras() {
+        const select = document.getElementById("playera");
+        const prevIdx = select.selectedIndex;
+        select.innerHTML = "";
+
+        if (metodo === "bordado") {
+            playeras_bordado.forEach((p, i) => {
+                const op = document.createElement("option");
+                op.value = i;
+                const precio = p[tipoPrenda];
+                op.textContent = precio > 0 ? `${p.nombre} — $${precio.toFixed(2)}` : p.nombre;
+                select.appendChild(op);
+            });
+        } else {
+            const lista = metodo === "estandar" ? playeras_estandar : playeras_presecada;
+            lista.forEach(p => {
+                const op = document.createElement("option");
+                op.value = p.precio;
+                op.textContent = p.precio > 0 ? `${p.nombre} — $${p.precio.toFixed(2)}` : p.nombre;
+                select.appendChild(op);
+            });
+        }
+
+        if (prevIdx > 0 && prevIdx < select.options.length) {
+            select.selectedIndex = prevIdx;
+        }
+
+        calcular();
+    }
+
+    // ── ACTUALIZAR UI AL CAMBIAR MÉTODO ──
+    function actualizarUI() {
+        const esPromo   = metodo === "promocionales";
+        const esBordado = metodo === "bordado";
+        const esDTF     = metodo === "dtfuv";
+
+        // Mostrar u ocultar campos del box de datos
+        document.getElementById("tipo-prenda-group").style.display = esBordado ? "block" : "none";
+        document.getElementById("playera-group").style.display     = (esPromo || esDTF) ? "none" : "block";
+        document.getElementById("cantidad-group").style.display    = (esPromo || esDTF) ? "none" : "block";
+
+        // Ponchado solo en bordado
+        document.getElementById("ponchado-box").style.display = esBordado ? "block" : "none";
+
+        // Título y botón del box de items
+        const titulos   = {estandar:"Impresiones", presecada:"Impresiones", bordado:"Bordados", promocionales:"Promocionales", dtfuv:"Diseños DTF UV"};
+        const btnTextos = {estandar:"+ Agregar impresión", presecada:"+ Agregar impresión", bordado:"+ Agregar bordado", promocionales:"+ Agregar artículo", dtfuv:"+ Agregar diseño"};
+        document.getElementById("titulo-items").textContent = titulos[metodo];
+        document.getElementById("agregar-btn").textContent  = btnTextos[metodo];
+
+        // Limpiar items
+        document.getElementById("items").innerHTML = "";
+
+        // Resetear ponchado
+        document.getElementById("ponchado-check").checked = false;
+        document.getElementById("ponchado-detalle").style.display = "none";
+        document.getElementById("ponchado-cantidad").value = 1;
+
+        // Resetear tipo prenda
+        tipoPrenda = "blanco";
+        document.querySelectorAll(".tipo-tab").forEach(t => {
+            t.classList.toggle("active", t.dataset.tipo === "blanco");
+        });
+
+        // Resultado inicial
+        document.getElementById("resultado").textContent = "Total: $0.00";
+        document.getElementById("error-cantidad").textContent = "";
+    }
+
+    // ── AGREGAR IMPRESIÓN (serigrafía) ──
+    function agregarImpresion() {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Impresión</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div class="item-grid">
+                <div class="form-group">
+                    <label>Tamaño</label>
+                    <select class="item-tamano">
+                        <option value="CHICA">Chica</option>
+                        <option value="GRANDE">Grande</option>
+                        <option value="EXTRA">Extra Grande</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tintas</label>
+                    <select class="item-tintas">
+                        <option value="0">1 tinta</option>
+                        <option value="1">2 tintas</option>
+                        <option value="2">3 tintas</option>
+                        <option value="3">4 tintas</option>
+                        <option value="4">Todo color</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+        div.querySelectorAll("select").forEach(s => s.addEventListener("change", calcular));
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── AGREGAR BORDADO ──
+    function agregarBordado() {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Bordado</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div style="max-width:220px">
+                <div class="form-group">
+                    <label>Tamaño</label>
+                    <select class="item-tamano-bordado">
+                        <option value="CHICO">Chico</option>
+                        <option value="GRANDE">Grande</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+        div.querySelector("select").addEventListener("change", calcular);
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── AGREGAR PROMOCIONAL ──
+    function agregarPromocional() {
+        const div = document.createElement("div");
+        div.className = "item promo-item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Artículo promocional</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div class="promo-layout">
+                <div>
+                    <label class="promo-img-label">
+                        <input type="file" accept="image/*" class="promo-file">
+                        <img class="promo-preview" src="" style="display:none" alt="">
+                        <span class="promo-placeholder">+ Foto</span>
+                    </label>
+                    <button type="button" class="promo-pegar-btn">Pegar imagen</button>
+                    <div class="promo-paste-target" contenteditable="true" style="position:fixed;opacity:0;width:1px;height:1px;overflow:hidden;top:-9999px"></div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Nombre del artículo</label>
+                        <input type="text" class="promo-nombre" placeholder="Ej: Taza, pluma, USB...">
+                    </div>
+                    <div class="item-grid">
+                        <div class="form-group">
+                            <label>Precio del artículo ($)</label>
+                            <input type="number" class="promo-precio" placeholder="0.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad</label>
+                            <input type="number" class="promo-cantidad" value="50" min="1">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:10px">
+                        <label>Tamaño de impresión</label>
+                        <select class="promo-tamano">
+                            <option value="NORMAL">Normal</option>
+                            <option value="CHICA">Chica</option>
+                        </select>
+                    </div>
+                    <div class="promo-calculo">Ingresa precio y cantidad para calcular</div>
+                </div>
+            </div>
+        `;
+
+        // Imagen preview
+        const fileInput   = div.querySelector(".promo-file");
+        const preview     = div.querySelector(".promo-preview");
+        const placeholder = div.querySelector(".promo-placeholder");
+        const imgLabel    = div.querySelector(".promo-img-label");
+
+        function cargarImagen(file) {
+            if (!file || !file.type.startsWith("image/")) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.style.display = "block";
+                placeholder.style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener("change", function() { cargarImagen(this.files[0]); });
+
+        imgLabel.addEventListener("dragover", e => {
+            e.preventDefault();
+            imgLabel.style.borderColor = "#007bff";
+            imgLabel.style.background  = "#e8f0fe";
+        });
+        imgLabel.addEventListener("dragleave", () => {
+            imgLabel.style.borderColor = "";
+            imgLabel.style.background  = "";
+        });
+        imgLabel.addEventListener("drop", e => {
+            e.preventDefault();
+            imgLabel.style.borderColor = "";
+            imgLabel.style.background  = "";
+            cargarImagen(e.dataTransfer.files[0]);
+        });
+
+        // Botón pegar imagen — usa evento paste, sin permiso de navegador
+        const pasteBtn    = div.querySelector(".promo-pegar-btn");
+        const pasteTarget = div.querySelector(".promo-paste-target");
+
+        pasteBtn.addEventListener("click", () => {
+            pasteTarget.focus();
+            pasteBtn.textContent = "Ctrl+V para pegar...";
+            pasteBtn.style.background = "#dce8ff";
+        });
+
+        pasteTarget.addEventListener("blur", () => {
+            pasteBtn.textContent = "Pegar imagen";
+            pasteBtn.style.background = "";
+        });
+
+        pasteTarget.addEventListener("paste", e => {
+            e.preventDefault();
+            const items = Array.from(e.clipboardData.items);
+
+            // ¿Imagen directa?
+            const imgItem = items.find(i => i.type.startsWith("image/"));
+            if (imgItem) {
+                cargarImagen(imgItem.getAsFile());
+                pasteTarget.blur();
+                return;
+            }
+
+            // ¿URL de imagen?
+            const url = e.clipboardData.getData("text/plain").trim();
+            if (url.startsWith("http")) {
+                preview.src = url;
+                preview.style.display = "block";
+                placeholder.style.display = "none";
+                pasteTarget.blur();
+                return;
+            }
+
+            pasteTarget.blur();
+        });
+
+        // Eliminar
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+
+        // Recalcular al cambiar campos
+        div.querySelectorAll(".promo-precio, .promo-cantidad, .promo-tamano").forEach(el => {
+            el.addEventListener("input", calcular);
+            el.addEventListener("change", calcular);
+        });
+
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── CALCULAR UN PROMO (actualiza display interno del item) ──
+    function calcularUnPromo(item) {
+        const precio   = parseFloat(item.querySelector(".promo-precio").value) || 0;
+        const cantidad = parseInt(item.querySelector(".promo-cantidad").value)  || 0;
+        const tamano   = item.querySelector(".promo-tamano").value;
+        const cDiv     = item.querySelector(".promo-calculo");
+
+        if (precio <= 0 || cantidad < 1) {
+            cDiv.innerHTML = `<span style="color:#aaa">Ingresa precio y cantidad para calcular</span>`;
+            item._c = null;
+            return;
+        }
+
+        const rango           = obtenerRangoPromo(cantidad);
+        const precioConMargen = precio * 1.38;
+        const costoImpresion  = tabla_promocionales[rango][tamano];
+        const unitario        = precioConMargen + costoImpresion;
+        const total           = unitario * cantidad;
+
+        cDiv.innerHTML =
+            `$${precio.toFixed(2)} &times; 1.38 = <strong>$${precioConMargen.toFixed(2)}</strong>` +
+            ` &nbsp;+&nbsp; impresión <strong>$${costoImpresion.toFixed(2)}</strong>` +
+            ` &nbsp;=&nbsp; <strong>$${unitario.toFixed(2)} c/u</strong>` +
+            ` &nbsp;&nbsp;·&nbsp;&nbsp; Total: <strong style="color:#0055cc">$${total.toLocaleString("es-MX",{minimumFractionDigits:2})}</strong>`;
+
+        item._c = {precio, cantidad, tamano, rango, precioConMargen, costoImpresion, unitario, total};
+    }
+
+    // ── CALCULAR ──
+    function calcular() {
+        if (metodo === "promocionales") { calcularPromocionales(); return; }
+        if (metodo === "dtfuv")         { calcularDTF();           return; }
+
+        const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
+        const errorDiv = document.getElementById("error-cantidad");
+
+        if (cantidad < 1) {
+            errorDiv.textContent = "La cantidad debe ser mayor a 0";
+            document.getElementById("resultado").textContent = "Error: cantidad inválida";
+            return;
+        }
+
+        const rango = obtenerRango(cantidad);
+        if (!rango) {
+            const max = metodo === "bordado" ? 100 : 500;
+            errorDiv.textContent = `La cantidad debe estar entre 1 y ${max}`;
+            document.getElementById("resultado").textContent = "Error: fuera de rango";
+            return;
+        }
+
+        errorDiv.textContent = "";
+
+        if (metodo === "bordado") {
+            calcularBordado(cantidad, rango);
+        } else {
+            calcularSerigrafia(cantidad, rango);
+        }
+    }
+
+    function calcularSerigrafia(cantidad, rango) {
+        const precioPlayera = parseFloat(document.getElementById("playera").value) || 0;
+        const tabla = metodo === "estandar" ? tabla_estandar : tabla_presecada;
+
+        let costoImpresion = 0;
+        document.querySelectorAll(".item-tamano").forEach(sel => {
+            const tamano = sel.value;
+            const idx    = parseInt(sel.closest(".item").querySelector(".item-tintas").value);
+            costoImpresion += tabla[rango][tamano][idx];
+        });
+
+        const unitario = precioPlayera + costoImpresion;
+        const total    = unitario * cantidad;
+        const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        document.getElementById("resultado").innerHTML =
+            `<div><strong>Rango:</strong> ${rango} &nbsp;|&nbsp; <strong>Unitario:</strong> $${fmt(unitario)} &nbsp;|&nbsp; <strong>Total:</strong> $${fmt(total)}</div>`;
+    }
+
+    function calcularBordado(cantidad, rango) {
+        const idx        = parseInt(document.getElementById("playera").value) || 0;
+        const prenda     = playeras_bordado[idx] || playeras_bordado[0];
+        const precioPlayera = prenda[tipoPrenda];
+
+        let costoBordado = 0;
+        document.querySelectorAll(".item-tamano-bordado").forEach(sel => {
+            costoBordado += tabla_bordado[rango][sel.value];
+        });
+
+        const unitario     = precioPlayera + costoBordado;
+        const totalPrendas = unitario * cantidad;
+
+        let ponchadoCosto = 0;
+        if (document.getElementById("ponchado-check").checked) {
+            const n = parseInt(document.getElementById("ponchado-cantidad").value) || 1;
+            ponchadoCosto = n * 145;
+        }
+
+        const total = totalPrendas + ponchadoCosto;
+        const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        let html = `<strong>Rango:</strong> ${rango} &nbsp;|&nbsp; <strong>Unitario:</strong> $${fmt(unitario)} &nbsp;|&nbsp; <strong>Subtotal:</strong> $${fmt(totalPrendas)}`;
+        if (ponchadoCosto > 0) html += ` &nbsp;+&nbsp; <strong>Ponchado:</strong> $${fmt(ponchadoCosto)}`;
+        html += ` &nbsp;|&nbsp; <strong>Total:</strong> $${fmt(total)}`;
+
+        document.getElementById("resultado").innerHTML = `<div>${html}</div>`;
+    }
+
+    function calcularPromocionales() {
+        const items = document.querySelectorAll(".promo-item");
+        if (items.length === 0) {
+            document.getElementById("resultado").textContent = "Agrega artículos para calcular";
+            return;
+        }
+
+        let grandTotal = 0;
+        let validos    = 0;
+        items.forEach(item => {
+            calcularUnPromo(item);
+            if (item._c) { grandTotal += item._c.total; validos++; }
+        });
+
+        const fmt = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById("resultado").innerHTML =
+            `<div>${validos} artículo${validos !== 1 ? "s" : ""} &nbsp;|&nbsp; <strong>Total del pedido: $${fmt(grandTotal)}</strong></div>`;
+    }
+
+    // ── EVENT LISTENERS ──
+    document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", function() {
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            this.classList.add("active");
+            metodo = this.dataset.metodo;
+            actualizarUI();
+            if (metodo !== "promocionales") cargarPlayeras();
+        });
+    });
+
+    document.querySelectorAll(".tipo-tab").forEach(tab => {
+        tab.addEventListener("click", function() {
+            document.querySelectorAll(".tipo-tab").forEach(t => t.classList.remove("active"));
+            this.classList.add("active");
+            tipoPrenda = this.dataset.tipo;
+            cargarPlayeras();
+        });
+    });
+
+    document.getElementById("playera").addEventListener("change", calcular);
+    document.getElementById("cantidad").addEventListener("input", calcular);
+
+    document.getElementById("agregar-btn").addEventListener("click", () => {
+        if (metodo === "bordado")            agregarBordado();
+        else if (metodo === "promocionales") agregarPromocional();
+        else if (metodo === "dtfuv")         agregarDiseñoDTF();
+        else                                 agregarImpresion();
+    });
+
+    document.getElementById("ponchado-check").addEventListener("change", function() {
+        document.getElementById("ponchado-detalle").style.display = this.checked ? "flex" : "none";
+        calcular();
+    });
+
+    document.getElementById("ponchado-cantidad").addEventListener("input", calcular);
+
+    document.getElementById("btn-generar").addEventListener("click", generarCotizacion);
+
+    // ── GENERAR COTIZACIÓN ──
+    function generarCotizacion() {
+        const cliente = document.getElementById("cliente").value.trim() || "Sin nombre";
+        const folio   = String(Date.now()).slice(-6);
+        const fecha   = new Date().toLocaleDateString("es-MX", {day:"2-digit", month:"long", year:"numeric"});
+        const fmt     = n => n.toLocaleString("es-MX", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+        let bodyHTML = "";
+
+        if (metodo === "promocionales") {
+            bodyHTML = generarBodyPromo(fmt);
+        } else if (metodo === "dtfuv") {
+            bodyHTML = generarBodyDTF(fmt);
+        } else {
+            bodyHTML = generarBodySeri(fmt);
+        }
+
+        const metodoNombre = {estandar:"Serigrafía estándar", presecada:"Serigrafía presecada", bordado:"Bordado", promocionales:"Promocionales", dtfuv:"DTF UV"}[metodo];
+
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotización — ${cliente}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#f0f2f5; display:flex; justify-content:center; padding:30px 15px; }
+  .page { background:white; width:640px; border-radius:14px; overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,.12); }
+  .header { display:flex; align-items:center; justify-content:space-between; padding:26px 32px 22px; border-bottom:3px solid #111; }
+  .logo { height:72px; width:72px; object-fit:contain; }
+  .header-right { text-align:right; }
+  .titulo { font-size:26px; font-weight:700; letter-spacing:2px; color:#111; }
+  .folio  { font-size:13px; color:#666; margin-top:4px; }
+  .cliente-box { background:#f7f8fa; padding:18px 32px; border-bottom:1px solid #e8e8e8; display:flex; justify-content:space-between; align-items:center; }
+  .cli-nombre { font-size:17px; font-weight:600; color:#111; }
+  .badge { display:inline-block; background:#111; color:white; font-size:11px; font-weight:600; letter-spacing:1px; padding:4px 10px; border-radius:4px; text-transform:uppercase; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:.8px; padding:0 0 10px; border-bottom:1px solid #e0e0e0; }
+  th:last-child { text-align:right; }
+  td { padding:10px 0; font-size:14px; color:#333; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  .sep { border-top:2px solid #111; margin:16px 0 0; }
+  .totales { padding:0 32px 28px; }
+  .t-row { display:flex; justify-content:space-between; padding:6px 0; font-size:14px; color:#555; }
+  .t-row.main { font-size:19px; font-weight:700; color:#111; border-top:2px solid #111; margin-top:8px; padding-top:12px; }
+  .footer { background:#111; color:#aaa; text-align:center; font-size:12px; padding:14px 32px; }
+  .footer span { color:white; font-weight:500; }
+  @media print {
+    body { background:white; padding:0; }
+    .page { box-shadow:none; border-radius:0; width:100%; }
+    .no-print { display:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <img class="logo" src="logo-diez.png" alt="Diez">
+    <div class="header-right">
+      <div class="titulo">COTIZACIÓN</div>
+      <div class="folio">Folio #${folio} &nbsp;·&nbsp; ${fecha}</div>
+    </div>
+  </div>
+  <div class="cliente-box">
+    <div>
+      <div style="font-size:11px;color:#888;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px">Cliente</div>
+      <div class="cli-nombre">${cliente}</div>
+    </div>
+    <div><span class="badge">${metodoNombre}</span></div>
+  </div>
+  ${bodyHTML}
+  <div style="padding:14px 32px 16px;text-align:center;font-size:11px;color:#888;line-height:1.6;border-top:1px solid #eee">
+    El tiempo de entrega se determinará y comenzará a contar a partir de la recepción del anticipo (70%) y de la autorización final del diseño.
+  </div>
+  <div class="footer">
+    Válido por 15 días &nbsp;·&nbsp; <span>Diez Creatividad Impresa</span>
+    <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:8px">
+      <span style="display:flex;align-items:center;gap:5px">
+        <img src="icono%20whats%20app.png" style="height:14px;filter:invert(1);vertical-align:middle">
+        312 244 3725
+      </span>
+      <span style="display:flex;align-items:center;gap:5px">
+        <img src="icono%20telefono%20fijo.png" style="height:14px;filter:invert(1);vertical-align:middle">
+        312 312 2119
+      </span>
+    </div>
+  </div>
+  <div class="no-print" style="text-align:center;padding:18px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+    <button onclick="window.print()" style="background:#111;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600">
+      Imprimir / Guardar PDF
+    </button>
+    ${metodo === "dtfuv" ? `<a id="btn-svg" href="${generarSVGDataURI()}" download="distribucion-dtf.svg" style="background:#0055cc;color:white;border:none;padding:11px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;text-decoration:none;display:inline-flex;align-items:center">Guardar distribución SVG</a>` : ""}
+  </div>
+</div>
+</body>
+</html>`;
+
+        const win = window.open("", "_blank");
+        win.document.write(html);
+        win.document.close();
+    }
+
+    // ── BODY SERIGRAFÍA / BORDADO ──
+    function generarBodySeri(fmt) {
+        const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
+        const rango    = obtenerRango(cantidad);
+
+        const playeraSelect = document.getElementById("playera");
+        let nombrePrenda = "Sin prenda", precioPrenda = 0;
+        if (metodo === "bordado") {
+            const idx = parseInt(playeraSelect.value) || 0;
+            const p   = playeras_bordado[idx] || playeras_bordado[0];
+            nombrePrenda = p.nombre;
+            precioPrenda = p[tipoPrenda];
+        } else {
+            nombrePrenda = playeraSelect.options[playeraSelect.selectedIndex].text.split(" — ")[0];
+            precioPrenda = parseFloat(playeraSelect.value) || 0;
+        }
+
+        const tabla        = metodo === "estandar" ? tabla_estandar : (metodo === "presecada" ? tabla_presecada : tabla_bordado);
+        const tintasLabel  = ["1 tinta","2 tintas","3 tintas","4 tintas","Todo color"];
+        const tamanoLabel  = {CHICA:"Chica", GRANDE:"Grande", EXTRA:"Extra grande", CHICO:"Chico"};
+
+        let itemsHTML = "", costoItems = 0;
+
+        if (metodo === "bordado") {
+            document.querySelectorAll(".item-tamano-bordado").forEach(sel => {
+                const tam = sel.value;
+                const c   = rango ? tabla_bordado[rango][tam] : 0;
+                costoItems += c;
+                itemsHTML += `<tr><td>Bordado ${tamanoLabel[tam]}</td><td style="text-align:right">$${fmt(c)}</td></tr>`;
+            });
+        } else {
+            document.querySelectorAll(".item-tamano").forEach(sel => {
+                const tam = sel.value;
+                const idx = parseInt(sel.closest(".item").querySelector(".item-tintas").value);
+                const c   = rango ? tabla[rango][tam][idx] : 0;
+                costoItems += c;
+                itemsHTML += `<tr><td>Impresión ${tamanoLabel[tam]} · ${tintasLabel[idx]}</td><td style="text-align:right">$${fmt(c)}</td></tr>`;
+            });
+        }
+
+        const unitario     = precioPrenda + costoItems;
+        const subtotal     = unitario * cantidad;
+        let ponchadoCosto  = 0, ponchadoFila = "";
+
+        if (metodo === "bordado" && document.getElementById("ponchado-check").checked) {
+            const n = parseInt(document.getElementById("ponchado-cantidad").value) || 1;
+            ponchadoCosto = n * 145;
+            ponchadoFila  = `<div class="t-row"><span>Ponchado (${n} diseño${n>1?"s":""})</span><span>$${fmt(ponchadoCosto)}</span></div>`;
+        }
+
+        const total = subtotal + ponchadoCosto;
+
+        return `
+  <div style="padding:24px 32px">
+    <table>
+      <thead><tr><th>Concepto</th><th style="text-align:right">Costo unitario</th></tr></thead>
+      <tbody>
+        ${nombrePrenda !== "- Sin prenda -" ? `<tr><td><strong>${nombrePrenda}</strong>${metodo==="bordado"?" · "+(tipoPrenda==="blanco"?"Blanca":"Color"):""}</td><td style="text-align:right">$${fmt(precioPrenda)}</td></tr>` : ""}
+        ${itemsHTML}
+      </tbody>
+    </table>
+    <div class="sep"></div>
+  </div>
+  <div class="totales">
+    <div class="t-row"><span>Rango</span><span>${rango || "—"}</span></div>
+    <div class="t-row"><span>Precio unitario</span><span>$${fmt(unitario)}</span></div>
+    <div class="t-row"><span>Subtotal (${cantidad} pzas.)</span><span>$${fmt(subtotal)}</span></div>
+    ${ponchadoFila}
+    <div class="t-row main"><span>TOTAL</span><span>$${fmt(total)}</span></div>
+  </div>`;
+    }
+
+    // ── BODY PROMOCIONALES ──
+    function generarBodyPromo(fmt) {
+        const items = document.querySelectorAll(".promo-item");
+        let filasHTML = "", grandTotal = 0;
+
+        items.forEach((item, i) => {
+            calcularUnPromo(item);
+            if (!item._c) return;
+            const c          = item._c;
+            const nombre     = item.querySelector(".promo-nombre").value.trim() || `Artículo ${i+1}`;
+            const preview    = item.querySelector(".promo-preview");
+            const imgSrc     = preview.style.display !== "none" ? preview.src : null;
+            grandTotal      += c.total;
+
+            const imgCell = imgSrc
+                ? `<img src="${imgSrc}" style="width:94px;height:94px;object-fit:contain;border-radius:7px;display:block;background:#f7f7f7">`
+                : `<div style="width:94px;height:94px;border-radius:7px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#bbb;text-align:center">sin<br>foto</div>`;
+
+            filasHTML += `
+            <tr>
+              <td style="width:106px;padding-right:14px;vertical-align:middle">${imgCell}</td>
+              <td>
+                <strong style="font-size:14px">${nombre}</strong>
+                <div style="font-size:12px;color:#888;margin-top:3px">
+                  Rango ${c.rango} &nbsp;·&nbsp; <strong style="color:#333">$${fmt(c.unitario)} c/u</strong>
+                </div>
+              </td>
+              <td style="text-align:right;white-space:nowrap;vertical-align:middle">
+                <span style="font-size:12px;color:#888">${c.cantidad} pzas.</span><br>
+                <strong style="font-size:15px">$${fmt(c.total)}</strong>
+              </td>
+            </tr>`;
+        });
+
+        return `
+  <div style="padding:24px 32px 0">
+    <table>
+      <thead><tr><th colspan="2">Artículo</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${filasHTML}</tbody>
+    </table>
+    <div class="sep"></div>
+  </div>
+  <div class="totales">
+    <div class="t-row main"><span>TOTAL DEL PEDIDO</span><span>$${fmt(grandTotal)}</span></div>
+  </div>`;
+    }
+
+    // ══════════════════════════════════════
+    // ── DTF UV ──
+    // ══════════════════════════════════════
+    const DTF_ANCHO  = 58;
+    const DTF_PRECIO = 1200;
+    const DTF_GAP    = 0.3;
+    const DTF_MIN    = 10;
+    const DTF_COLORES = ["#4e79a7","#f28e2b","#e15759","#76b7b2","#59a14f","#edc948","#b07aa1","#ff9da7","#9c755f","#bab0ac"];
+    const DTF_INST    = [{label:"Sin instalación",costo:0},{label:"Simple",costo:3},{label:"Complejo",costo:6}];
+
+    // ── AGREGAR DISEÑO DTF ──
+    function agregarDiseñoDTF() {
+        const div = document.createElement("div");
+        div.className = "item dtf-item";
+        div.innerHTML = `
+            <div class="item-header">
+                <strong>Diseño</strong>
+                <button class="eliminar" type="button">Eliminar</button>
+            </div>
+            <div class="dtf-layout">
+                <div class="dtf-img-col">
+                    <label class="dtf-img-label">
+                        <input type="file" accept="image/*" class="promo-file">
+                        <img class="promo-preview" src="" style="display:none" alt="">
+                        <span class="promo-placeholder">+ Foto</span>
+                    </label>
+                    <button type="button" class="dtf-pegar-btn">Pegar imagen</button>
+                    <div class="promo-paste-target" contenteditable="true" style="position:fixed;opacity:0;width:1px;height:1px;overflow:hidden;top:-9999px"></div>
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label>Nombre del diseño</label>
+                        <input type="text" class="dtf-nombre" placeholder="Ej: Logo frente">
+                    </div>
+                    <div class="item-grid">
+                        <div class="form-group">
+                            <label>Base (cm)</label>
+                            <input type="number" class="dtf-base" placeholder="0" min="0.1" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Altura (cm)</label>
+                            <input type="number" class="dtf-altura" placeholder="0" min="0.1" step="0.1">
+                        </div>
+                    </div>
+                    <div class="item-grid">
+                        <div class="form-group">
+                            <label>Cantidad</label>
+                            <input type="number" class="dtf-cantidad" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Instalación</label>
+                            <select class="dtf-instalacion">
+                                <option value="0">Sin instalación ($0)</option>
+                                <option value="1">Simple ($3/pza)</option>
+                                <option value="2">Complejo ($6/pza)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="check-label" style="font-weight:400;margin-bottom:10px">
+                        <input type="checkbox" class="dtf-rotacion" checked>
+                        Permitir rotación
+                    </label>
+                    <div class="dtf-error" style="color:#ff4d4d;font-size:12px;margin-top:4px;display:none"></div>
+                    <div class="promo-calculo dtf-calculo">Ingresa medidas y cantidad para calcular</div>
+                </div>
+            </div>
+        `;
+
+        const fileInput   = div.querySelector(".promo-file");
+        const preview     = div.querySelector(".promo-preview");
+        const placeholder = div.querySelector(".promo-placeholder");
+        const imgLabel    = div.querySelector(".dtf-img-label");
+        const baseInput   = div.querySelector(".dtf-base");
+        const alturaInput = div.querySelector(".dtf-altura");
+
+        function cargarImagen(file) {
+            if (!file || !file.type.startsWith("image/")) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.style.display = "block";
+                placeholder.style.display = "none";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function actualizarAR() {
+            const b = parseFloat(baseInput.value)   || 1;
+            const a = parseFloat(alturaInput.value) || 1;
+            if (preview.style.display === "none") imgLabel.style.aspectRatio = `${b} / ${a}`;
+        }
+
+        fileInput.addEventListener("change", function() { cargarImagen(this.files[0]); });
+        baseInput.addEventListener("input",  () => { actualizarAR(); calcular(); });
+        alturaInput.addEventListener("input",() => { actualizarAR(); calcular(); });
+        actualizarAR();
+
+        imgLabel.addEventListener("dragover",  e => { e.preventDefault(); imgLabel.style.borderColor="#007bff"; imgLabel.style.background="#e8f0fe"; });
+        imgLabel.addEventListener("dragleave", () => { imgLabel.style.borderColor=""; imgLabel.style.background=""; });
+        imgLabel.addEventListener("drop", e => { e.preventDefault(); imgLabel.style.borderColor=""; imgLabel.style.background=""; cargarImagen(e.dataTransfer.files[0]); });
+
+        const pasteBtn    = div.querySelector(".dtf-pegar-btn");
+        const pasteTarget = div.querySelector(".promo-paste-target");
+        pasteBtn.addEventListener("click", () => { pasteTarget.focus(); pasteBtn.textContent="Ctrl+V para pegar..."; pasteBtn.style.background="#dce8ff"; });
+        pasteTarget.addEventListener("blur", () => { pasteBtn.textContent="Pegar imagen"; pasteBtn.style.background=""; });
+        pasteTarget.addEventListener("paste", e => {
+            e.preventDefault();
+            const items = Array.from(e.clipboardData.items);
+            const img = items.find(i => i.type.startsWith("image/"));
+            if (img) { cargarImagen(img.getAsFile()); pasteTarget.blur(); return; }
+            const url = e.clipboardData.getData("text/plain").trim();
+            if (url.startsWith("http")) { preview.src=url; preview.style.display="block"; placeholder.style.display="none"; }
+            pasteTarget.blur();
+        });
+
+        div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
+        div.querySelectorAll(".dtf-cantidad,.dtf-instalacion,.dtf-rotacion").forEach(el => {
+            el.addEventListener("input",  calcular);
+            el.addEventListener("change", calcular);
+        });
+
+        document.getElementById("items").appendChild(div);
+        calcular();
+    }
+
+    // ── SKYLINE HELPERS ──
+    function dtfMaxH(sky, x1, x2) {
+        let m = 0;
+        for (const s of sky) { if (s.x2 > x1 && s.x1 < x2) m = Math.max(m, s.y); }
+        return m;
+    }
+
+    function dtfUpdateSky(sky, x1, x2, ny) {
+        const next = [];
+        for (const s of sky) {
+            if (s.x2 <= x1 || s.x1 >= x2) { next.push({...s}); continue; }
+            if (s.x1 < x1) next.push({x1:s.x1, x2:x1,  y:s.y});
+            if (s.x2 > x2) next.push({x1:x2,   x2:s.x2, y:s.y});
+        }
+        next.push({x1, x2, y:ny});
+        next.sort((a,b)=>a.x1-b.x1);
+        const merged=[];
+        for (const s of next) {
+            const l=merged[merged.length-1];
+            if (l && l.y===s.y && Math.abs(l.x2-s.x1)<0.0001) l.x2=s.x2;
+            else merged.push({...s});
+        }
+        sky.length=0; sky.push(...merged);
+    }
+
+    // ── SKYLINE PACK ──
+    function dtfPack(pieces) {
+        const sky=[{x1:0, x2:DTF_ANCHO, y:0}];
+        const pl=[];
+        for (const p of pieces) {
+            let best=null, bY=Infinity, bX=Infinity;
+            const oris=[{w:p.w,h:p.h}];
+            if (p.canRotate && Math.abs(p.w-p.h)>0.001) oris.push({w:p.h,h:p.w});
+            for (const o of oris) {
+                if (o.w > DTF_ANCHO+0.001) continue;
+                for (const seg of sky) {
+                    const x=seg.x1;
+                    if (x+o.w > DTF_ANCHO+0.001) continue;
+                    const y=dtfMaxH(sky,x,x+o.w);
+                    if (y<bY||(y===bY&&x<bX)) { bY=y; bX=x; best={x,y,w:o.w,h:o.h,label:p.label,designIdx:p.designIdx}; }
+                }
+            }
+            if (best) { pl.push(best); dtfUpdateSky(sky,best.x,best.x+best.w,best.y+best.h); }
+        }
+        const totalLength=sky.reduce((m,s)=>Math.max(m,s.y),0);
+        return {placements:pl, totalLength};
+    }
+
+    // ── CALCULAR DTF ──
+    function calcularDTF() {
+        const items=[...document.querySelectorAll(".dtf-item")];
+        if (!items.length) { document.getElementById("resultado").textContent="Agrega diseños para calcular"; return; }
+
+        const designs=[]; let hayError=false;
+        items.forEach((item,idx)=>{
+            const errDiv  = item.querySelector(".dtf-error");
+            const base    = parseFloat(item.querySelector(".dtf-base").value)    || 0;
+            const altura  = parseFloat(item.querySelector(".dtf-altura").value)  || 0;
+            const cantidad= parseInt(item.querySelector(".dtf-cantidad").value)  || 0;
+            const rotacion= item.querySelector(".dtf-rotacion").checked;
+            const instIdx = parseInt(item.querySelector(".dtf-instalacion").value);
+            const nombre  = item.querySelector(".dtf-nombre").value.trim() || `D${idx+1}`;
+            errDiv.style.display="none"; errDiv.textContent=""; item._d=null;
+            if (base<=0||altura<=0||cantidad<=0) {
+                errDiv.textContent="Medidas y cantidad deben ser mayores a 0";
+                errDiv.style.display="block"; hayError=true; return;
+            }
+            if (Math.min(base,altura)>DTF_ANCHO) {
+                errDiv.textContent=`El diseño no cabe en la tira de ${DTF_ANCHO} cm`;
+                errDiv.style.display="block"; hayError=true; return;
+            }
+            const prev = item.querySelector(".promo-preview");
+            const imgSrc = prev && prev.style.display !== "none" ? prev.src : null;
+            const d={idx,nombre,base,altura,cantidad,rotacion,instIdx,inst:DTF_INST[instIdx],imgSrc};
+            item._d=d; designs.push(d);
+        });
+
+        if (!designs.length) {
+            document.getElementById("resultado").textContent=hayError?"Corrige los errores antes de calcular":"Agrega diseños para calcular";
+            return;
+        }
+
+        // Expandir y ordenar piezas
+        const pieces=[];
+        designs.forEach(d=>{
+            for (let i=0;i<d.cantidad;i++)
+                pieces.push({w:d.base+DTF_GAP, h:d.altura+DTF_GAP, canRotate:d.rotacion, label:d.nombre, designIdx:d.idx});
+        });
+        pieces.sort((a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h));
+
+        const {placements,totalLength}=dtfPack(pieces);
+        const largoCm     = Math.max(totalLength, DTF_MIN);
+        const costoMat    = (largoCm/100)*DTF_PRECIO;
+        const areaTotal   = designs.reduce((s,d)=>s+d.base*d.altura*d.cantidad,0);
+
+        designs.forEach(d=>{
+            const frac      = areaTotal>0 ? (d.base*d.altura*d.cantidad)/areaTotal : 0;
+            const costoGrupo= frac*costoMat;
+            d.precioUnit    = d.cantidad>0 ? costoGrupo/d.cantidad : 0;
+            d.instTotal     = d.cantidad*d.inst.costo;
+            d.subtotal      = costoGrupo+d.instTotal;
+        });
+
+        const instTotal   = designs.reduce((s,d)=>s+d.instTotal,0);
+        const totalPedido = costoMat+instTotal;
+        const eficiencia  = totalLength>0 ? areaTotal/(DTF_ANCHO*totalLength)*100 : 0;
+
+        document._dtfResult={designs,placements,totalLength,largoCm,costoMat,totalPedido,eficiencia};
+
+        const fmt=n=>n.toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+        items.forEach(item=>{
+            if (!item._d) return;
+            const d=item._d;
+            item.querySelector(".dtf-calculo").innerHTML=
+                `<strong>$${fmt(d.precioUnit)} c/u</strong>`+
+                (d.inst.costo>0?` + inst. $${fmt(d.inst.costo)}`:"") +
+                ` · ${d.cantidad} pzas. = <strong style="color:#0055cc">$${fmt(d.subtotal)}</strong>`;
+        });
+
+        document.getElementById("resultado").innerHTML=
+            `<div>${largoCm.toFixed(1)} cm lineales · <strong>Total: $${fmt(totalPedido)}</strong></div>`;
+    }
+
+    // ── BODY DTF COTIZACIÓN ──
+    function generarBodyDTF(fmt) {
+        const r=document._dtfResult;
+        if (!r) return "<div style='padding:32px'>Sin datos</div>";
+        const {designs,totalPedido}=r;
+        let filas="";
+        designs.forEach(d=>{
+            const precioUnitTotal = d.precioUnit + d.inst.costo;
+            const subtotal        = d.cantidad * precioUnitTotal;
+            const ar = `${d.base}/${d.altura}`;
+            const imgCell = d.imgSrc
+                ? `<img src="${d.imgSrc}" style="width:60px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
+                : `<div style="width:60px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:20px"></div>`;
+            filas+=`<tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px">
+                  ${imgCell}
+                  <div>
+                    <strong>${d.nombre}</strong>
+                    <div style="font-size:11px;color:#888;margin-top:2px">${d.base}×${d.altura} cm</div>
+                  </div>
+                </div>
+              </td>
+              <td style="text-align:center;vertical-align:middle">${d.cantidad}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(precioUnitTotal)}</td>
+              <td style="text-align:right;vertical-align:middle"><strong>$${fmt(subtotal)}</strong></td>
+            </tr>`;
+        });
+        return `
+  <div style="padding:24px 32px 0">
+    <table>
+      <thead><tr>
+        <th>Diseño</th>
+        <th style="text-align:center">Cant.</th>
+        <th style="text-align:right">Precio unit.</th>
+        <th style="text-align:right">Subtotal</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <div class="sep"></div>
+  </div>
+  <div class="totales">
+    <div class="t-row main"><span>TOTAL</span><span>$${fmt(totalPedido)}</span></div>
+  </div>`;
+    }
+
+    // ── GENERAR SVG DISTRIBUCIÓN ──
+    function generarSVGString() {
+        const r=document._dtfResult;
+        if (!r) return null;
+        const {placements,totalLength,designs}=r;
+        const scale=Math.min(9, 700/Math.max(totalLength,1));
+        const svgW=Math.round(DTF_ANCHO*scale);
+        const svgH=Math.round(totalLength*scale);
+        const margin=44;
+        const colorMap={};
+        designs.forEach((d,i)=>{ colorMap[d.idx]=DTF_COLORES[i%DTF_COLORES.length]; });
+
+        let rects="";
+        placements.forEach(p=>{
+            const x=p.x*scale, y=p.y*scale;
+            const w=(p.w-DTF_GAP)*scale, h=(p.h-DTF_GAP)*scale;
+            const col=colorMap[p.designIdx]||"#ccc";
+            const fs=Math.max(6,Math.min(11,Math.min(w,h)/3));
+            rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" fill-opacity="0.75" stroke="${col}" stroke-width="0.8"/>`;
+            if (w>22&&h>12) rects+=`<text x="${(x+w/2).toFixed(1)}" y="${(y+h/2).toFixed(1)}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#111" font-family="Arial,sans-serif">${p.label}</text>`;
+        });
+
+        let legend="";
+        designs.forEach((d,i)=>{
+            const ly=svgH+margin+20+i*18;
+            const col=DTF_COLORES[i%DTF_COLORES.length];
+            legend+=`<rect x="0" y="${ly}" width="13" height="13" fill="${col}" fill-opacity="0.75" rx="2"/>`;
+            legend+=`<text x="17" y="${ly+10}" font-size="11" font-family="Arial,sans-serif" fill="#333">${d.nombre} — ${d.base}×${d.altura} cm × ${d.cantidad} pzas.</text>`;
+        });
+
+        const totalH=svgH+margin+20+designs.length*18+20;
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${svgW+margin*2}" height="${totalH}">
+  <rect x="${margin}" y="0" width="${svgW}" height="${svgH}" fill="#fafafa" stroke="#444" stroke-width="1.5"/>
+  <g transform="translate(${margin},0)">${rects}</g>
+  <line x1="${margin}" y1="${svgH+10}" x2="${margin+svgW}" y2="${svgH+10}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin}" y1="${svgH+6}" x2="${margin}" y2="${svgH+14}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin+svgW}" y1="${svgH+6}" x2="${margin+svgW}" y2="${svgH+14}" stroke="#444" stroke-width="1"/>
+  <text x="${margin+svgW/2}" y="${svgH+26}" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" fill="#333">58 cm (ancho de tira)</text>
+  <line x1="${margin-12}" y1="0" x2="${margin-12}" y2="${svgH}" stroke="#444" stroke-width="1"/>
+  <line x1="${margin-16}" y1="0" x2="${margin-8}" y2="0" stroke="#444" stroke-width="1"/>
+  <line x1="${margin-16}" y1="${svgH}" x2="${margin-8}" y2="${svgH}" stroke="#444" stroke-width="1"/>
+  <text x="${margin-12}" y="${svgH/2}" text-anchor="middle" font-size="12" font-family="Arial,sans-serif" fill="#333" transform="rotate(-90,${margin-12},${svgH/2})">${totalLength.toFixed(1)} cm</text>
+  <g transform="translate(${margin},0)">${legend}</g>
+</svg>`;
+    }
+
+    function generarSVGDataURI() {
+        const svg=generarSVGString();
+        if (!svg) return "#";
+        return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+    }
+
+    function descargarSVG() {
+        const svg=generarSVGString();
+        if (!svg) { alert("Primero calcula el pedido"); return; }
+        const blob=new Blob([svg],{type:"image/svg+xml"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=url; a.download="distribucion-dtf.svg"; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ── INIT ──
+    cargarPlayeras();
+</script>
+</body>
+</html>

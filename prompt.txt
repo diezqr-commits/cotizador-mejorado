@@ -1,0 +1,6 @@
+# .claude-instructions
+- Solo modifica líneas necesarias, usa str_replace
+- No reescribas archivos completos
+- Usa object-fit: contain para imágenes
+- El gap en DTF UV es 0.3 cm
+- Nunca cambies la estructura HTML base
