@@ -2089,50 +2089,27 @@
         if (!r) return "<div style='padding:32px'>Sin datos. Calcula el pedido primero.</div>";
 
         if (r.tecnica === "dtf") {
-            // Distribuir costo de bajadas proporcionalmente entre diseños
-            const bajadaXDiseno = r.designs.length > 0 ? r.costoBajadas / r.designs.length : 0;
+            // Precio unitario consolidado: todo excepto diseño adaptativo (que es un cargo único)
+            const costoBase  = r.totalPedido - r.costoAdaptativo;
+            const precioUnit = r.globalCantidad > 0 ? costoBase / r.globalCantidad : 0;
 
-            let filas = "";
+            // Descripción: modelo + listado de impresiones
+            const nombresImp = r.designs.map(d => d.nombre).join(", ");
+            const descripcion = r.precioPrenda > 0
+                ? `${r.nombrePrenda} + DTF (${nombresImp})`
+                : `Impresión DTF (${nombresImp})`;
 
-            // Fila de playeras (si hay modelo seleccionado con precio)
-            if (r.precioPrenda > 0) {
-                filas += `<tr>
-                  <td><strong>${r.nombrePrenda}</strong><div style="font-size:11px;color:#888;margin-top:2px">Playera</div></td>
-                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
-                  <td style="text-align:right;vertical-align:middle">$${fmt(r.precioPrenda)}</td>
-                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(r.costoPlayeras)}</strong></td>
-                </tr>`;
-            }
+            let filas = `<tr>
+              <td><strong>${descripcion}</strong></td>
+              <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(precioUnit)}</td>
+              <td style="text-align:right;vertical-align:middle"><strong>$${fmt(costoBase)}</strong></td>
+            </tr>`;
 
-            // Filas de impresiones DTF (precio unitario = material + bajadas del diseño, por playera)
-            r.designs.forEach(d => {
-                const tam = VT_TAMAÑOS[d.tamanoKey];
-                const ar = `${d.base}/${d.altura}`;
-                const imgCell = d.imgSrc
-                    ? `<img src="${d.imgSrc}" style="width:54px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
-                    : `<div style="width:54px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
-                const costoDeseno = d.matCosto + bajadaXDiseno;
-                const unitDeseno  = costoDeseno / r.globalCantidad;
-                filas += `<tr>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:10px">
-                      ${imgCell}
-                      <div>
-                        <strong>${d.nombre}</strong>
-                        <div style="font-size:11px;color:#888;margin-top:2px">DTF · ${tam.nombre}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style="text-align:center;vertical-align:middle">${r.globalCantidad}</td>
-                  <td style="text-align:right;vertical-align:middle">$${fmt(unitDeseno)}</td>
-                  <td style="text-align:right;vertical-align:middle"><strong>$${fmt(costoDeseno)}</strong></td>
-                </tr>`;
-            });
-
-            // Diseño adaptativo como línea separada
             if (r.adaptativo) {
                 filas += `<tr>
-                  <td colspan="2"><strong>Diseño adaptativo</strong></td>
+                  <td><strong>Diseño adaptativo</strong></td>
+                  <td style="text-align:center;vertical-align:middle">1</td>
                   <td></td>
                   <td style="text-align:right;vertical-align:middle"><strong>$${fmt(r.costoAdaptativo)}</strong></td>
                 </tr>`;
@@ -2145,7 +2122,7 @@
         <th>Artículo</th>
         <th style="text-align:center">Cant.</th>
         <th style="text-align:right">P. Unitario</th>
-        <th style="text-align:right">Subtotal</th>
+        <th style="text-align:right">Total</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>
