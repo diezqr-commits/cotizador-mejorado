@@ -673,10 +673,10 @@
         // Diseño adaptativo solo aplica para DTF
         document.getElementById("vt-adaptativo-row").style.display = esDTF ? "flex" : "none";
         if (!esDTF) document.getElementById("vt-adaptativo").checked = false;
-        // Modelo y cantidad: solo para DTF (todas las impresiones aplican a las mismas playeras)
-        document.getElementById("playera-group").style.display  = esDTF ? "block" : "none";
-        document.getElementById("cantidad-group").style.display = esDTF ? "block" : "none";
-        if (esDTF) cargarPlayeras();
+        // Modelo y cantidad: globales para DTF y Vinil (todas las impresiones aplican a las mismas playeras)
+        document.getElementById("playera-group").style.display  = "block";
+        document.getElementById("cantidad-group").style.display = "block";
+        cargarPlayeras();
         // Limpiar items al cambiar técnica (cada técnica tiene campos distintos)
         document.getElementById("items").innerHTML = "";
         document.getElementById("resultado").textContent = "Total: $0.00";
@@ -1861,7 +1861,7 @@
                         <label>Nombre de la impresión</label>
                         <input type="text" class="vt-nombre" placeholder="Ej: Logo">
                     </div>
-                    <div class="vt-grid-3">
+                    <div class="vt-grid-3" style="grid-template-columns:1fr 1fr">
                         <div class="form-group">
                             <label>Tamaño</label>
                             <select class="vt-tamano">
@@ -1869,10 +1869,6 @@
                                 <option value="1/2">1/2 carta</option>
                                 <option value="carta">Carta</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Cantidad playeras</label>
-                            <input type="number" class="vt-cantidad" value="1" min="1">
                         </div>
                         <div class="form-group">
                             <label>Depilación</label>
@@ -1892,7 +1888,6 @@
         vtActualizarAR(div);
 
         div.querySelector(".vt-tamano").addEventListener("change", () => { vtActualizarAR(div); calcular(); });
-        div.querySelector(".vt-cantidad").addEventListener("input", calcular);
         div.querySelector(".vt-depilacion").addEventListener("change", calcular);
         div.querySelector(".eliminar").addEventListener("click", () => { div.remove(); calcular(); });
 
@@ -2057,8 +2052,20 @@
     // ── CALCULAR VINIL (módulo viniltf) ──
     function calcularVT_Vinil() {
         const items = [...document.querySelectorAll(".vt-vinil-item")];
+        const globalCantidad = parseInt(document.getElementById("cantidad").value) || 0;
+        const playeraSelect  = document.getElementById("playera");
+        const precioPrenda   = parseFloat(playeraSelect.value) || 0;
+        const nombrePrenda   = playeraSelect.options[playeraSelect.selectedIndex]
+            ? playeraSelect.options[playeraSelect.selectedIndex].text.split(" — ")[0]
+            : "Sin prenda";
+
         if (!items.length) {
             document.getElementById("resultado").textContent = "Agrega impresiones para calcular";
+            document._vtResult = null;
+            return;
+        }
+        if (globalCantidad < 1) {
+            document.getElementById("resultado").textContent = "Cantidad debe ser mayor a 0";
             document._vtResult = null;
             return;
         }
@@ -2068,14 +2075,9 @@
         items.forEach((item, idx) => {
             const errDiv = item.querySelector(".vt-error");
             const tamanoKey = item.querySelector(".vt-tamano").value;
-            const cantidad  = parseInt(item.querySelector(".vt-cantidad").value) || 0;
             const depilacion= item.querySelector(".vt-depilacion").value;
             const nombre    = item.querySelector(".vt-nombre").value.trim() || `D${idx+1}`;
             errDiv.style.display = "none"; errDiv.textContent = ""; item._vt = null;
-            if (cantidad <= 0) {
-                errDiv.textContent = "Cantidad debe ser mayor a 0";
-                errDiv.style.display = "block"; hayError = true; return;
-            }
             if (!depilacion || (depilacion !== "simple" && depilacion !== "compleja")) {
                 errDiv.textContent = "Selecciona tipo de depilación";
                 errDiv.style.display = "block"; hayError = true; return;
@@ -2083,7 +2085,7 @@
             const tam = VT_TAMAÑOS[tamanoKey];
             const prev = item.querySelector(".promo-preview");
             const imgSrc = prev && prev.style.display !== "none" ? prev.src : null;
-            designs.push({idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, cantidad, depilacion, imgSrc, _item: item});
+            designs.push({idx, nombre, tamanoKey, base: tam.base, altura: tam.altura, depilacion, imgSrc, _item: item});
         });
 
         if (!designs.length) {
@@ -2096,14 +2098,15 @@
         let totalMat = 0, totalCorte = 0, totalDepilacion = 0;
 
         designs.forEach(d => {
-            const info = vtComputarVinilLargo(d.altura, d.cantidad);
+            const info = vtComputarVinilLargo(d.altura, globalCantidad);
+            d.cantidad  = globalCantidad;
             d.largoCm   = info.largoTotalCm;
             d.cortes    = info.cortes;
             d.matCosto  = (info.largoTotalCm / 100) * VT_VINIL_PRECIO;
-            d.corteCosto = vtPrecioCorte(d.tamanoKey, d.cantidad);
+            d.corteCosto = vtPrecioCorte(d.tamanoKey, globalCantidad);
             const depUnit = vtDepilacionUnit(d.depilacion, d.tamanoKey);
             d.depUnit    = depUnit;
-            d.depCosto   = depUnit * d.cantidad;
+            d.depCosto   = depUnit * globalCantidad;
             d.subtotal   = d.matCosto + d.corteCosto + d.depCosto;
             totalMat        += d.matCosto;
             totalCorte      += d.corteCosto;
@@ -2113,11 +2116,16 @@
                 `<strong style="color:#0055cc">$${fmt(d.subtotal)}</strong>`;
         });
 
-        const totalPedido = totalMat + totalCorte + totalDepilacion;
+        const costoPlayeras = precioPrenda * globalCantidad;
+        const totalPedido   = costoPlayeras + totalMat + totalCorte + totalDepilacion;
 
         document._vtResult = {
             tecnica: "vinil",
             designs,
+            globalCantidad,
+            precioPrenda,
+            nombrePrenda,
+            costoPlayeras,
             totalMat,
             totalCorte,
             totalDepilacion,
@@ -2212,7 +2220,20 @@
         }
 
         // VINIL
+        const cantV = r.globalCantidad || 0;
         let filas = "";
+
+        // Fila playera
+        if (r.precioPrenda > 0) {
+            filas += `<tr>
+              <td><strong>${r.nombrePrenda}</strong><div style="font-size:11px;color:#888;margin-top:2px">Playera</div></td>
+              <td style="text-align:center;vertical-align:middle">${cantV}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(r.precioPrenda)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(r.costoPlayeras)}</td>
+            </tr>`;
+        }
+
+        // Filas de impresiones
         r.designs.forEach(d => {
             const tam = VT_TAMAÑOS[d.tamanoKey];
             const ar = `${d.base}/${d.altura}`;
@@ -2220,45 +2241,50 @@
                 ? `<img src="${d.imgSrc}" style="width:48px;aspect-ratio:${ar};object-fit:contain;border-radius:6px;flex-shrink:0;background:#f7f7f7">`
                 : `<div style="width:48px;aspect-ratio:${ar};border-radius:6px;background:#f0f0f0;flex-shrink:0;min-height:18px"></div>`;
             const depLabel = d.depilacion === "simple" ? "Simple" : "Compleja";
+            const unit = cantV > 0 ? d.subtotal / cantV : 0;
             filas += `<tr>
               <td>
                 <div style="display:flex;align-items:center;gap:8px">
                   ${imgCell}
                   <div>
                     <strong>${d.nombre}</strong>
-                    <div style="font-size:11px;color:#888;margin-top:2px">${tam.nombre} · dep. ${depLabel}${d.cortes>1?` · ${d.cortes} cortes`:""}</div>
+                    <div style="font-size:11px;color:#888;margin-top:2px">Vinil · ${tam.nombre} · dep. ${depLabel}</div>
                   </div>
                 </div>
               </td>
-              <td style="text-align:center;vertical-align:middle">${d.cantidad}</td>
-              <td style="text-align:right;vertical-align:middle">${(d.largoCm/100).toFixed(3)} m</td>
-              <td style="text-align:right;vertical-align:middle">$${fmt(d.matCosto)}</td>
-              <td style="text-align:right;vertical-align:middle">$${fmt(d.corteCosto)}</td>
-              <td style="text-align:right;vertical-align:middle">$${fmt(d.depCosto)}</td>
-              <td style="text-align:right;vertical-align:middle"><strong>$${fmt(d.subtotal)}</strong></td>
+              <td style="text-align:center;vertical-align:middle">${cantV}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(unit)}</td>
+              <td style="text-align:right;vertical-align:middle">$${fmt(d.subtotal)}</td>
             </tr>`;
         });
+
+        // Fila resumen integrado
+        const costoVinilTotal = r.totalMat + r.totalCorte + r.totalDepilacion;
+        const unitInt = cantV > 0 ? (r.costoPlayeras + costoVinilTotal) / cantV : 0;
+        const descInt = r.precioPrenda > 0
+            ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} VINIL`
+            : `+${r.designs.length} VINIL`;
+        filas += `<tr style="background:#f7f9ff;font-weight:600">
+          <td>${descInt}</td>
+          <td style="text-align:center;vertical-align:middle">${cantV}</td>
+          <td style="text-align:right;vertical-align:middle">$${fmt(unitInt)}</td>
+          <td style="text-align:right;vertical-align:middle">$${fmt(r.costoPlayeras + costoVinilTotal)}</td>
+        </tr>`;
 
         return `
   <div style="padding:24px 32px 0">
     <table>
       <thead><tr>
-        <th>Impresión</th>
+        <th>Artículo</th>
         <th style="text-align:center">Cant.</th>
-        <th style="text-align:right">Largo</th>
-        <th style="text-align:right">Material</th>
-        <th style="text-align:right">Corte</th>
-        <th style="text-align:right">Depilación</th>
-        <th style="text-align:right">Subtotal</th>
+        <th style="text-align:right">P. Unitario</th>
+        <th style="text-align:right">Total</th>
       </tr></thead>
       <tbody>${filas}</tbody>
     </table>
     <div class="sep"></div>
   </div>
   <div class="totales">
-    <div class="t-row"><span>Material Vinil</span><span>$${fmt(r.totalMat)}</span></div>
-    <div class="t-row"><span>Corte</span><span>$${fmt(r.totalCorte)}</span></div>
-    <div class="t-row"><span>Depilación</span><span>$${fmt(r.totalDepilacion)}</span></div>
     <div class="t-row main"><span>TOTAL</span><span>$${fmt(r.totalPedido)}</span></div>
   </div>`;
     }
