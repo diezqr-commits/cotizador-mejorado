@@ -2096,8 +2096,8 @@
             // Descripción: modelo + listado de impresiones
             const nombresImp = r.designs.map(d => d.nombre).join(", ");
             const descripcion = r.precioPrenda > 0
-                ? `${r.nombrePrenda} + DTF (${nombresImp})`
-                : `Impresión DTF (${nombresImp})`;
+                ? `PLAYERA ${r.nombrePrenda} + ${r.designs.length} DTF (${nombresImp})`
+                : `${r.designs.length} DTF (${nombresImp})`;
 
             let filas = `<tr>
               <td><strong>${descripcion}</strong></td>
