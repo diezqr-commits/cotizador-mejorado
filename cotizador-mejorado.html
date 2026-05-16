@@ -381,6 +381,26 @@
     let metodo = "estandar";
     let tipoPrenda = "blanco";
 
+    // ── CACHÉ DE IMÁGENES (base64 para cotización en blob URL) ──
+    const imgCache = {};
+    async function precargarImagenes() {
+        const archivos = [
+            {key:"logo",      path:"logo-diez.png"},
+            {key:"whatsapp",  path:"icono whats app.png"},
+            {key:"telefono",  path:"icono telefono fijo.png"}
+        ];
+        for (const {key, path} of archivos) {
+            try {
+                const blob = await fetch(path).then(r => r.blob());
+                imgCache[key] = await new Promise(res => {
+                    const r = new FileReader();
+                    r.onload = e => res(e.target.result);
+                    r.readAsDataURL(blob);
+                });
+            } catch(e) { imgCache[key] = ""; }
+        }
+    }
+
     // ── PLAYERAS SERIGRAFÍA ESTÁNDAR ──
     const playeras_estandar = [
         {nombre: "- Sin prenda -", precio: 0},
@@ -970,6 +990,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="format-detection" content="telephone=no">
 <title>Cotización — ${cliente}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -1005,7 +1026,7 @@
 <body>
 <div class="page">
   <div class="header">
-    <img class="logo" src="logo-diez.png" alt="Diez">
+    <img class="logo" src="${imgCache.logo || 'logo-diez.png'}" alt="Diez">
     <div class="header-right">
       <div class="titulo">COTIZACIÓN</div>
       <div class="folio">Folio #${folio} &nbsp;·&nbsp; ${fecha}</div>
@@ -1026,11 +1047,11 @@
     Válido por 15 días &nbsp;·&nbsp; <span>Diez Creatividad Impresa</span>
     <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:8px">
       <span style="display:flex;align-items:center;gap:5px">
-        <img src="icono%20whats%20app.png" style="height:14px;filter:invert(1);vertical-align:middle">
+        <img src="${imgCache.whatsapp || 'icono%20whats%20app.png'}" style="height:14px;filter:invert(1);vertical-align:middle">
         312 244 3725
       </span>
       <span style="display:flex;align-items:center;gap:5px">
-        <img src="icono%20telefono%20fijo.png" style="height:14px;filter:invert(1);vertical-align:middle">
+        <img src="${imgCache.telefono || 'icono%20telefono%20fijo.png'}" style="height:14px;filter:invert(1);vertical-align:middle">
         312 312 2119
       </span>
     </div>
@@ -1528,6 +1549,7 @@
     }
 
     // ── INIT ──
+    precargarImagenes();
     cargarPlayeras();
 </script>
 </body>
